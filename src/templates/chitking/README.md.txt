@@ -2,4 +2,4 @@
 
 This tracked placeholder proves the Chitking template pipeline is active.
 
-Runtime behavior from the Trellis-hosted RT prototype is intentionally not copied in this skeleton.
+Chitking runtime behavior and generated scaffold names are Chitking-native.

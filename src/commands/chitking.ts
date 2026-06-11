@@ -4,10 +4,10 @@ import { execFileSync } from "node:child_process";
 import { parse, stringify } from "yaml";
 import {
   getOpenCodeTemplatePath,
-  getRtTemplatePath,
+  getChitkingRuntimeTemplatePath,
 } from "../templates/extract.js";
 
-const RESEARCH_TRELLIS_DIR = ".research-trellis";
+const CHITKING_DIR = ".chitking";
 const RESEARCH_DIR = "research";
 const ACTIVE_FILE = "active.yaml";
 const CONFIG_FILE = "config.yaml";
@@ -17,13 +17,13 @@ const CONTEXT_DIR = "context";
 const CONTEXT_IGNORE_PATTERN = "research/*/context/*.yaml";
 const ROLES_DIR = "roles";
 const SKILLS_DIR = "skills";
-const RT_WORKFLOW_SKILL = "rt-workflow";
+const CHITKING_WORKFLOW_SKILL = "chitking-workflow";
 const OPENCODE_DIR = ".opencode";
 const OPENCODE_AGENTS_DIR = "agents";
 const OPENCODE_SKILLS_DIR = "skills";
 const OPENCODE_PLUGINS_DIR = "plugins";
-const OPENCODE_RT_CONTEXT_PLUGIN = "inject-rt-context.js";
-const RT_CONFIG_TEMPLATE = "config.yaml";
+const OPENCODE_CHITKING_CONTEXT_PLUGIN = "inject-chitking-context.js";
+const CHITKING_CONFIG_TEMPLATE = "config.yaml";
 
 export interface ChitkingStatus {
   productName: string;
@@ -37,7 +37,7 @@ export function getChitkingStatus(): ChitkingStatus {
     productName: "Chitking",
     chineseName: "哲徑",
     behaviorMigrated: true,
-    message: "All RT scaffold and runtime command behavior is available.",
+    message: "All Chitking scaffold and runtime command behavior is available.",
   };
 }
 
@@ -172,8 +172,8 @@ function writeYamlFile(filePath: string, value: unknown): void {
   fs.writeFileSync(filePath, stringify(value), "utf-8");
 }
 
-function getResearchTrellisDir(cwd: string): string {
-  return path.join(cwd, RESEARCH_TRELLIS_DIR);
+function getChitkingDir(cwd: string): string {
+  return path.join(cwd, CHITKING_DIR);
 }
 
 function getResearchDir(cwd: string): string {
@@ -185,27 +185,27 @@ function getProjectPath(cwd: string): string {
 }
 
 function getActivePath(cwd: string): string {
-  return path.join(getResearchTrellisDir(cwd), ACTIVE_FILE);
+  return path.join(getChitkingDir(cwd), ACTIVE_FILE);
 }
 
 function getConfigPath(cwd: string): string {
-  return path.join(getResearchTrellisDir(cwd), CONFIG_FILE);
+  return path.join(getChitkingDir(cwd), CONFIG_FILE);
 }
 
 function getRolesDir(cwd: string): string {
-  return path.join(getResearchTrellisDir(cwd), ROLES_DIR);
+  return path.join(getChitkingDir(cwd), ROLES_DIR);
 }
 
 function getRoleContractPath(cwd: string, role: string): string {
   return path.join(getRolesDir(cwd), `${role}.md`);
 }
 
-function getResearchTrellisSkillsDir(cwd: string): string {
-  return path.join(getResearchTrellisDir(cwd), SKILLS_DIR);
+function getChitkingSkillsDir(cwd: string): string {
+  return path.join(getChitkingDir(cwd), SKILLS_DIR);
 }
 
-function getRtWorkflowSkillPath(cwd: string): string {
-  return path.join(getResearchTrellisSkillsDir(cwd), `${RT_WORKFLOW_SKILL}.md`);
+function getChitkingWorkflowSkillPath(cwd: string): string {
+  return path.join(getChitkingSkillsDir(cwd), `${CHITKING_WORKFLOW_SKILL}.md`);
 }
 
 function getOpenCodeAgentsDir(cwd: string): string {
@@ -220,20 +220,20 @@ function getOpenCodePluginsDir(cwd: string): string {
   return path.join(cwd, OPENCODE_DIR, OPENCODE_PLUGINS_DIR);
 }
 
-function getOpenCodeRtContextPluginPath(cwd: string): string {
-  return path.join(getOpenCodePluginsDir(cwd), OPENCODE_RT_CONTEXT_PLUGIN);
+function getOpenCodeChitkingContextPluginPath(cwd: string): string {
+  return path.join(getOpenCodePluginsDir(cwd), OPENCODE_CHITKING_CONTEXT_PLUGIN);
 }
 
-function getOpenCodeRtWorkflowSkillDir(cwd: string): string {
-  return path.join(getOpenCodeSkillsDir(cwd), RT_WORKFLOW_SKILL);
+function getOpenCodeChitkingWorkflowSkillDir(cwd: string): string {
+  return path.join(getOpenCodeSkillsDir(cwd), CHITKING_WORKFLOW_SKILL);
 }
 
-function getOpenCodeRtWorkflowSkillPath(cwd: string): string {
-  return path.join(getOpenCodeRtWorkflowSkillDir(cwd), "SKILL.md");
+function getOpenCodeChitkingWorkflowSkillPath(cwd: string): string {
+  return path.join(getOpenCodeChitkingWorkflowSkillDir(cwd), "SKILL.md");
 }
 
 function getOpenCodeAdapterPath(cwd: string, role: string): string {
-  return path.join(getOpenCodeAgentsDir(cwd), `rt-${role}.md`);
+  return path.join(getOpenCodeAgentsDir(cwd), `chitking-${role}.md`);
 }
 
 function getThreadDir(cwd: string, slug: string): string {
@@ -269,17 +269,17 @@ function isOrientHousekeepingStatus(statusLine: string): boolean {
   const paths = statusLinePaths(statusLine);
   return paths.every(
     (repoPath) =>
-      repoPath === ".research-trellis/active.yaml" ||
+      repoPath === ".chitking/active.yaml" ||
       isGeneratedContextPath(repoPath),
   );
 }
 
-function getRtTemplateFilePath(...segments: string[]): string {
-  return path.join(getRtTemplatePath(), ...segments);
+function getChitkingRuntimeTemplateFilePath(...segments: string[]): string {
+  return path.join(getChitkingRuntimeTemplatePath(), ...segments);
 }
 
 function defaultConfigTemplateContent(): string {
-  return fs.readFileSync(getRtTemplateFilePath(RT_CONFIG_TEMPLATE), "utf-8");
+  return fs.readFileSync(getChitkingRuntimeTemplateFilePath(CHITKING_CONFIG_TEMPLATE), "utf-8");
 }
 
 function normalizeConfig(
@@ -323,7 +323,7 @@ function normalizeConfig(
 function defaultConfig(): ResearchConfig {
   const raw = parse(defaultConfigTemplateContent()) as unknown;
   if (!isRecord(raw)) {
-    throw new Error("RT default config template must contain a YAML mapping");
+    throw new Error("Chitking default config template must contain a YAML mapping");
   }
   return normalizeConfig(raw, undefined);
 }
@@ -348,7 +348,7 @@ function defaultRoleContractContent(
   ].filter((line): line is string => line !== null);
   const gateText = gates.length > 0 ? gates.join("\n") : "- No stage gate.";
 
-  return `# Research Trellis ${roleTitle(roleName)} Role\n\n## Objective\n\n${role.prompt.objective}\n\n## Scope and Gates\n\n${gateText}\n\n## Required Inputs\n\n- Read \`research/project.md\` before the active thread.\n- Read the active \`research/<thread>/thread.md\`.\n- Use the per-thread packet from \`rt pack --role ${roleName}\` for current file references, maturity, readiness, warnings, and stop conditions.\n\n## Warnings\n\n${warnings}\n\n## Stop Conditions\n\n${stopConditions}\n\n## Universal Boundaries\n\n- Do not change maturity or readiness; humans own those checkpoints.\n- Do not treat generated packets as source of truth; project and thread Markdown files are canonical.\n- Record factual output with \`rt record\` only when a human or calling workflow asks for it.\n`;
+  return `# Chitking ${roleTitle(roleName)} Role\n\n## Objective\n\n${role.prompt.objective}\n\n## Scope and Gates\n\n${gateText}\n\n## Required Inputs\n\n- Read \`research/project.md\` before the active thread.\n- Read the active \`research/<thread>/thread.md\`.\n- Use the per-thread packet from \`chitking pack --role ${roleName}\` for current file references, maturity, readiness, warnings, and stop conditions.\n\n## Warnings\n\n${warnings}\n\n## Stop Conditions\n\n${stopConditions}\n\n## Universal Boundaries\n\n- Do not change maturity or readiness; humans own those checkpoints.\n- Do not treat generated packets as source of truth; project and thread Markdown files are canonical.\n- Record factual output with \`chitking record\` only when a human or calling workflow asks for it.\n`;
 }
 
 function dreamerRoleContractContent(role: RoleDefinition): string {
@@ -357,7 +357,7 @@ function dreamerRoleContractContent(role: RoleDefinition): string {
     .map((condition) => `- ${condition}`)
     .join("\n");
 
-  return `# Research Trellis Dreamer Role\n\n## Objective\n\n${role.prompt.objective}\n\n## Required Inputs\n\n- Theory brief.\n- Open questions.\n- Constraints and non-goals.\n- Unresolved objections.\n- Failed paths.\n- The current per-thread packet from \`rt pack --role dreamer\`.\n\n## Output Shape\n\nProduce bounded ideation candidates, not an implementation plan:\n\n- Hypotheses that may explain the current capability gap.\n- Strange analogies that could reveal hidden structure.\n- Candidate mechanisms worth investigating.\n- Edge cases and failure modes that stress the theory.\n- Possible theory directions that require review before adoption.\n\n## Hard Boundaries\n\n- Do not create implementation tasks.\n- Do not assign work to build, Executor, or any implementation role.\n- Do not hand Dreamer output directly to build or Executor.\n- Do not present ideation as approved next safe action.\n- Route candidates through human, oracle, or planner review before they can become implementation work.\n\n## Warnings\n\n${warnings}\n\n## Stop Conditions\n\n${stopConditions}\n`;
+  return `# Chitking Dreamer Role\n\n## Objective\n\n${role.prompt.objective}\n\n## Required Inputs\n\n- Theory brief.\n- Open questions.\n- Constraints and non-goals.\n- Unresolved objections.\n- Failed paths.\n- The current per-thread packet from \`chitking pack --role dreamer\`.\n\n## Output Shape\n\nProduce bounded ideation candidates, not an implementation plan:\n\n- Hypotheses that may explain the current capability gap.\n- Strange analogies that could reveal hidden structure.\n- Candidate mechanisms worth investigating.\n- Edge cases and failure modes that stress the theory.\n- Possible theory directions that require review before adoption.\n\n## Hard Boundaries\n\n- Do not create implementation tasks.\n- Do not assign work to build, Executor, or any implementation role.\n- Do not hand Dreamer output directly to build or Executor.\n- Do not present ideation as approved next safe action.\n- Route candidates through human, oracle, or planner review before they can become implementation work.\n\n## Warnings\n\n${warnings}\n\n## Stop Conditions\n\n${stopConditions}\n`;
 }
 
 function opencodePermissionsForRole(roleName: string): OpenCodePermissions {
@@ -404,45 +404,45 @@ function opencodeAdapterContent(
     roleName === "dreamer"
       ? "\nDreamer-specific boundary: OpenCode `edit: deny` blocks write/edit/patch tools. Do not create implementation tasks, call build/Executor directly, or present ideation as approved implementation work.\n"
       : "";
-  return `---\ndescription: |\n  Research Trellis ${roleTitle(roleName)} adapter with embedded canonical role contract.\nmode: subagent\npermission:\n  read: ${permission.read}\n  edit: ${permission.edit}\n  bash: ${permission.bash}\n  glob: ${permission.glob}\n  grep: ${permission.grep}\n  list: ${permission.list}\n  task: ${permission.task}\n---\n# Research Trellis ${roleTitle(roleName)} Adapter\n\nYou are the Research Trellis \`${roleName}\` role adapter for OpenCode.\n\nUse the active thread packet generated by:\n\n- \`rt pack --role ${roleName}\`\n\nRole objective summary:\n\n${role.prompt.objective}\n${dreamerBoundary}\n## Embedded Canonical Role Contract\n\n${contractContent}`;
+  return `---\ndescription: |\n  Chitking ${roleTitle(roleName)} adapter with embedded canonical role contract.\nmode: subagent\npermission:\n  read: ${permission.read}\n  edit: ${permission.edit}\n  bash: ${permission.bash}\n  glob: ${permission.glob}\n  grep: ${permission.grep}\n  list: ${permission.list}\n  task: ${permission.task}\n---\n# Chitking ${roleTitle(roleName)} Adapter\n\nYou are the Chitking \`${roleName}\` role adapter for OpenCode.\n\nUse the active thread packet generated by:\n\n- \`chitking pack --role ${roleName}\`\n\nRole objective summary:\n\n${role.prompt.objective}\n${dreamerBoundary}\n## Embedded Canonical Role Contract\n\n${contractContent}`;
 }
 
-function rtWorkflowSkillContent(): string {
+function chitkingWorkflowSkillContent(): string {
   return fs.readFileSync(
-    getRtTemplateFilePath(SKILLS_DIR, `${RT_WORKFLOW_SKILL}.md`),
+    getChitkingRuntimeTemplateFilePath(SKILLS_DIR, `${CHITKING_WORKFLOW_SKILL}.md`),
     "utf-8",
   );
 }
 
-function opencodeRtWorkflowSkillContent(canonicalContent: string): string {
+function opencodeChitkingWorkflowSkillContent(canonicalContent: string): string {
   return `---
-name: rt-workflow
-description: Trigger when working in a Research Trellis repo, using rt commands, interpreting RT workflow/state files, or handling research threads, maturity, readiness, roles, or generated packets.
+name: chitking-workflow
+description: Trigger when working in a Chitking repo, using chitking commands, interpreting Chitking workflow/state files, or handling research threads, maturity, readiness, roles, or generated packets.
 ---
 ${canonicalContent}`;
 }
 
-function ensureOpenCodeRtContextPlugin(cwd: string): void {
+function ensureOpenCodeChitkingContextPlugin(cwd: string): void {
   ensureDir(getOpenCodePluginsDir(cwd));
   const templatePath = path.join(
     getOpenCodeTemplatePath(),
     OPENCODE_PLUGINS_DIR,
-    OPENCODE_RT_CONTEXT_PLUGIN,
+    OPENCODE_CHITKING_CONTEXT_PLUGIN,
   );
   writeFileIfMissing(
-    getOpenCodeRtContextPluginPath(cwd),
+    getOpenCodeChitkingContextPluginPath(cwd),
     fs.readFileSync(templatePath, "utf-8"),
   );
 }
 
-function ensureRtWorkflowSkill(cwd: string): void {
-  ensureDir(getResearchTrellisSkillsDir(cwd));
-  ensureDir(getOpenCodeRtWorkflowSkillDir(cwd));
-  const canonicalContent = rtWorkflowSkillContent();
-  writeFileIfMissing(getRtWorkflowSkillPath(cwd), canonicalContent);
+function ensureChitkingWorkflowSkill(cwd: string): void {
+  ensureDir(getChitkingSkillsDir(cwd));
+  ensureDir(getOpenCodeChitkingWorkflowSkillDir(cwd));
+  const canonicalContent = chitkingWorkflowSkillContent();
+  writeFileIfMissing(getChitkingWorkflowSkillPath(cwd), canonicalContent);
   writeFileIfMissing(
-    getOpenCodeRtWorkflowSkillPath(cwd),
-    opencodeRtWorkflowSkillContent(canonicalContent),
+    getOpenCodeChitkingWorkflowSkillPath(cwd),
+    opencodeChitkingWorkflowSkillContent(canonicalContent),
   );
 }
 
@@ -475,7 +475,7 @@ function defaultThreadBody(): string {
 function loadConfig(cwd: string): ResearchConfig {
   const configPath = getConfigPath(cwd);
   if (!fs.existsSync(configPath)) {
-    throw new Error("Run rt init before using Research Trellis commands.");
+    throw new Error("Run chitking init before using Chitking commands.");
   }
 
   const raw = readYamlRecord(configPath);
@@ -525,7 +525,7 @@ function parseActiveState(cwd: string): ActiveState {
   const activePath = getActivePath(cwd);
   if (!fs.existsSync(activePath)) {
     throw new Error(
-      "No active Research Trellis thread. Run rt thread new first.",
+      "No active Chitking thread. Run chitking thread new first.",
     );
   }
   const raw = readYamlRecord(activePath);
@@ -549,7 +549,7 @@ function resolveActiveThread(cwd: string): string {
   const active = parseActiveState(cwd);
   if (!active.active_thread) {
     throw new Error(
-      "No active Research Trellis thread. Run rt focus <thread> first.",
+      "No active Chitking thread. Run chitking focus <thread> first.",
     );
   }
   return active.active_thread;
@@ -786,14 +786,14 @@ function validateReadiness(value: number): number {
 }
 
 export function chitkingInit(cwd: string = process.cwd()): void {
-  const researchTrellisDir = getResearchTrellisDir(cwd);
+  const chitkingDir = getChitkingDir(cwd);
   const researchDir = getResearchDir(cwd);
-  ensureDir(researchTrellisDir);
+  ensureDir(chitkingDir);
   ensureDir(researchDir);
   writeFileIfMissing(getConfigPath(cwd), defaultConfigTemplateContent());
   ensureRoleHarness(cwd, loadConfig(cwd));
-  ensureRtWorkflowSkill(cwd);
-  ensureOpenCodeRtContextPlugin(cwd);
+  ensureChitkingWorkflowSkill(cwd);
+  ensureOpenCodeChitkingContextPlugin(cwd);
   writeFileIfMissing(
     getActivePath(cwd),
     stringify({ active_thread: null, updated_at: nowIso() }),
@@ -813,7 +813,7 @@ export function chitkingInit(cwd: string = process.cwd()): void {
       "utf-8",
     );
   }
-  console.log("Research Trellis initialized.");
+  console.log("Chitking initialized.");
 }
 
 export function chitkingThreadNew(
@@ -822,7 +822,7 @@ export function chitkingThreadNew(
   cwd: string = process.cwd(),
 ): string {
   if (!fs.existsSync(getProjectPath(cwd))) {
-    throw new Error("research/project.md is required. Run rt init first.");
+    throw new Error("research/project.md is required. Run chitking init first.");
   }
   loadConfig(cwd);
   const slug = options.slug ? validateSlug(options.slug) : slugifyTitle(title);
@@ -943,19 +943,19 @@ export function chitkingOrient(cwd: string = process.cwd()): string {
   lines.push("", "Recommended next safe actions:");
   if (nextMaturity) {
     lines.push(
-      `- If the thread is ready, run: rt step --to ${nextMaturity} --reason "..."`,
+      `- If the thread is ready, run: chitking step --to ${nextMaturity} --reason "..."`,
     );
   }
   lines.push(
     "- Edit research/project.md or thread.md directly before agent fan-out.",
   );
-  lines.push("- Regenerate a role packet with: rt pack --role <role>");
+  lines.push("- Regenerate a role packet with: chitking pack --role <role>");
   lines.push("", "Recovery options if stuck:");
   lines.push(
-    '- Record a failed path with: rt record --type failure --text "..."',
+    '- Record a failed path with: chitking record --type failure --text "..."',
   );
   lines.push(
-    '- Move maturity backward with: rt step --to <maturity> --reason "..."',
+    '- Move maturity backward with: chitking step --to <maturity> --reason "..."',
   );
 
   const output = lines.join("\n");
@@ -984,7 +984,7 @@ export function chitkingStep(
   let targetMaturity = options.to;
   if (targetMaturity) {
     if (!options.reason || options.reason.trim().length === 0) {
-      throw new Error("rt step --to requires --reason.");
+      throw new Error("chitking step --to requires --reason.");
     }
     if (!config.maturity_ladder.includes(targetMaturity)) {
       throw new Error(`Unknown maturity: ${targetMaturity}`);
@@ -1050,10 +1050,10 @@ export function chitkingPack(
     prompt: role.prompt,
     reading_order: ["project_file", "thread_file"],
     agent_utilities: {
-      record_evidence: 'rt record --type evidence --text "..."',
-      record_failure: 'rt record --type failure --text "..."',
-      record_decision: 'rt record --type decision --text "..."',
-      record_revision: 'rt record --type revision --text "..."',
+      record_evidence: 'chitking record --type evidence --text "..."',
+      record_failure: 'chitking record --type failure --text "..."',
+      record_decision: 'chitking record --type decision --text "..."',
+      record_revision: 'chitking record --type revision --text "..."',
     },
   };
   writeYamlFile(packetPath, packet);
@@ -1070,7 +1070,7 @@ export function chitkingRecord(
     throw new Error(`Unknown record type: ${options.type}`);
   }
   if (!options.text || options.text.trim().length === 0) {
-    throw new Error("rt record requires --text.");
+    throw new Error("chitking record requires --text.");
   }
   const slug = resolveActiveThread(cwd);
   const thread = readThread(cwd, slug);

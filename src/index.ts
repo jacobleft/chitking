@@ -19,5 +19,4 @@ export {
 } from "./commands/chitking.js";
 export {
   createChitkingProgram,
-  type ChitkingProgramOptions,
 } from "./cli/chitking.js";

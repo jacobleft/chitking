@@ -52,7 +52,7 @@ describe("chitking command skeleton", () => {
     expect(status.chineseName).toBe("哲徑");
     expect(status.behaviorMigrated).toBe(true);
     expect(formatChitkingStatus(status)).toContain(
-      "All RT scaffold and runtime command behavior is available",
+      "All Chitking scaffold and runtime command behavior is available",
     );
   });
 
@@ -72,37 +72,22 @@ describe("chitking command skeleton", () => {
     expect(help).toContain("record");
   });
 
-  it("can present the legacy rt alias identity", () => {
-    const program = createChitkingProgram({ name: "rt" });
-    const help = program.helpInformation();
-
-    expect(help).toContain("Usage: rt");
-    expect(help).toContain("-v, --version");
-    expect(help).toContain("init");
-    expect(help).toContain("thread");
-    expect(help).toContain("focus");
-    expect(help).toContain("orient");
-    expect(help).toContain("step");
-    expect(help).toContain("pack");
-    expect(help).toContain("record");
-  });
-
-  it("initializes the RT-compatible scaffold", () => {
+  it("initializes the Chitking-native scaffold", () => {
     const cwd = makeTempDir("chitking-init-");
     vi.spyOn(console, "log").mockImplementation(() => undefined);
 
     chitkingInit(cwd);
 
-    expect(existsSync(path.join(cwd, ".research-trellis", "config.yaml"))).toBe(true);
-    expect(existsSync(path.join(cwd, ".research-trellis", "active.yaml"))).toBe(true);
+    expect(existsSync(path.join(cwd, ".chitking", "config.yaml"))).toBe(true);
+    expect(existsSync(path.join(cwd, ".chitking", "active.yaml"))).toBe(true);
     expect(existsSync(path.join(cwd, "research", "project.md"))).toBe(true);
-    expect(existsSync(path.join(cwd, ".research-trellis", "roles", "plan.md"))).toBe(true);
-    expect(existsSync(path.join(cwd, ".opencode", "agents", "rt-plan.md"))).toBe(true);
+    expect(existsSync(path.join(cwd, ".chitking", "roles", "plan.md"))).toBe(true);
+    expect(existsSync(path.join(cwd, ".opencode", "agents", "chitking-plan.md"))).toBe(true);
     expect(
-      existsSync(path.join(cwd, ".opencode", "skills", "rt-workflow", "SKILL.md")),
+      existsSync(path.join(cwd, ".opencode", "skills", "chitking-workflow", "SKILL.md")),
     ).toBe(true);
     expect(
-      existsSync(path.join(cwd, ".opencode", "plugins", "inject-rt-context.js")),
+      existsSync(path.join(cwd, ".opencode", "plugins", "inject-chitking-context.js")),
     ).toBe(true);
     expect(readFileSync(path.join(cwd, ".gitignore"), "utf-8")).toContain(
       "research/*/context/*.yaml",
@@ -114,10 +99,10 @@ describe("chitking command skeleton", () => {
     vi.spyOn(console, "log").mockImplementation(() => undefined);
 
     chitkingInit(cwd);
-    const rolePath = path.join(cwd, ".research-trellis", "roles", "plan.md");
-    const agentPath = path.join(cwd, ".opencode", "agents", "rt-plan.md");
-    const skillPath = path.join(cwd, ".opencode", "skills", "rt-workflow", "SKILL.md");
-    const pluginPath = path.join(cwd, ".opencode", "plugins", "inject-rt-context.js");
+    const rolePath = path.join(cwd, ".chitking", "roles", "plan.md");
+    const agentPath = path.join(cwd, ".opencode", "agents", "chitking-plan.md");
+    const skillPath = path.join(cwd, ".opencode", "skills", "chitking-workflow", "SKILL.md");
+    const pluginPath = path.join(cwd, ".opencode", "plugins", "inject-chitking-context.js");
     writeFileSync(rolePath, "custom role", "utf-8");
     writeFileSync(agentPath, "custom agent", "utf-8");
     writeFileSync(skillPath, "custom skill", "utf-8");
@@ -142,7 +127,7 @@ describe("chitking command skeleton", () => {
 
     chitkingInit(cwd);
     writeFileSync(
-      path.join(cwd, ".research-trellis", "config.yaml"),
+      path.join(cwd, ".chitking", "config.yaml"),
       `schema_version: 1
 maturity_ladder:
   - seed
@@ -167,15 +152,15 @@ project_incomplete_markers:
     chitkingInit(cwd);
 
     const criticRole = readFileSync(
-      path.join(cwd, ".research-trellis", "roles", "critic.md"),
+      path.join(cwd, ".chitking", "roles", "critic.md"),
       "utf-8",
     );
     const criticAgent = readFileSync(
-      path.join(cwd, ".opencode", "agents", "rt-critic.md"),
+      path.join(cwd, ".opencode", "agents", "chitking-critic.md"),
       "utf-8",
     );
     expect(criticRole).toContain("Critique the current research claim.");
-    expect(criticAgent).toContain("rt pack --role critic");
+    expect(criticAgent).toContain("chitking pack --role critic");
   });
 
   it("OpenCode plugin injects role context and main breadcrumbs", async () => {
@@ -187,7 +172,7 @@ project_incomplete_markers:
       cwd,
       ".opencode",
       "plugins",
-      "inject-rt-context.js",
+      "inject-chitking-context.js",
     );
     const mod = (await import(
       `${pathToFileURL(pluginPath).href}?case=${Date.now()}`
@@ -212,10 +197,10 @@ project_incomplete_markers:
     expect(unrelated.args.prompt).toBe("do work");
 
     const roleCall = {
-      args: { subagent_type: "rt-build", prompt: "implement approved action" },
+      args: { subagent_type: "chitking-build", prompt: "implement approved action" },
     };
     await hooks["tool.execute.before"]({ tool: "Task" }, roleCall);
-    expect(roleCall.args.prompt).toContain("<!-- rt-context-injected -->");
+    expect(roleCall.args.prompt).toContain("<!-- chitking-context-injected -->");
     expect(roleCall.args.prompt).toContain("Role: build");
     expect(roleCall.args.prompt).toContain("Active thread: contact-stability");
     expect(roleCall.args.prompt).toContain("Maturity: seed");
@@ -224,7 +209,7 @@ project_incomplete_markers:
     expect(roleCall.args.prompt).toContain(
       "Thread file: research/contact-stability/thread.md",
     );
-    expect(roleCall.args.prompt).toContain("rt pack --role build");
+    expect(roleCall.args.prompt).toContain("chitking pack --role build");
     expect(roleCall.args.prompt).toContain("readiness 1 is below role minimum 4");
     expect(roleCall.args.prompt).toContain(
       "maturity seed is before role minimum implementation-ready",
@@ -237,16 +222,16 @@ project_incomplete_markers:
 
     const chatOutput = { parts: [{ type: "text", text: "user request" }] };
     await hooks["chat.message"]({ agent: "main" }, chatOutput);
-    expect(chatOutput.parts[0].text).toContain("<rt-breadcrumb>");
+    expect(chatOutput.parts[0].text).toContain("<chitking-breadcrumb>");
     expect(chatOutput.parts[0].text).toContain(
-      "Active RT thread: contact-stability",
+      "Active Chitking thread: contact-stability",
     );
     expect(chatOutput.parts[0].text).toContain("Maturity: seed");
     expect(chatOutput.parts[0].text).toContain("Readiness: 1 (human)");
     expect(chatOutput.parts[0].text).toContain("user request");
 
     const roleChatOutput = { parts: [{ type: "text", text: "role turn" }] };
-    await hooks["chat.message"]({ agent: "rt-dreamer" }, roleChatOutput);
+    await hooks["chat.message"]({ agent: "chitking-dreamer" }, roleChatOutput);
     expect(roleChatOutput.parts[0].text).toBe("role turn");
   });
 
@@ -270,7 +255,7 @@ project_incomplete_markers:
       recorded_commits: [],
     });
     expect(readText(threadPath)).toContain("## Theory Brief");
-    expect(readText(path.join(cwd, ".research-trellis", "active.yaml"))).toContain(
+    expect(readText(path.join(cwd, ".chitking", "active.yaml"))).toContain(
       "active_thread: contact-stability",
     );
   });
@@ -300,7 +285,7 @@ project_incomplete_markers:
     expect(frontmatter.maturity).toBe("briefed");
     expect(frontmatter.readiness).toBe(1);
     expect(() => chitkingStep({ to: "gap-identified" }, cwd)).toThrow(
-      "rt step --to requires --reason",
+      "chitking step --to requires --reason",
     );
 
     chitkingStep({ to: "gap-identified", readiness: 2, reason: "human accepted the gap" }, cwd);

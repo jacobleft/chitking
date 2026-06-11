@@ -10,8 +10,8 @@ export function getChitkingTemplatePath(...segments: string[]): string {
   return path.join(getTemplateRootPath(), "chitking", ...segments);
 }
 
-export function getRtTemplatePath(...segments: string[]): string {
-  return path.join(getTemplateRootPath(), "rt", ...segments);
+export function getChitkingRuntimeTemplatePath(...segments: string[]): string {
+  return path.join(getTemplateRootPath(), "chitking", ...segments);
 }
 
 export function getOpenCodeTemplatePath(...segments: string[]): string {

@@ -7,8 +7,7 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "chitking": "./bin/chitking.js",
-    "rt": "./bin/rt.js"
+    "chitking": "./bin/chitking.js"
   },
   "scripts": {
     "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",

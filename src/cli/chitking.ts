@@ -1,6 +1,5 @@
 import { Command } from "commander";
 import { pathToFileURL } from "node:url";
-import path from "node:path";
 import chalk from "chalk";
 
 import {
@@ -16,10 +15,6 @@ import {
 } from "../commands/chitking.js";
 import { PRODUCT_DESCRIPTION, VERSION } from "../constants.js";
 
-export interface ChitkingProgramOptions {
-  name?: string;
-}
-
 function parseReadiness(value: string): number {
   const parsed = Number(value);
   if (!Number.isInteger(parsed) || parsed < 0 || parsed > 5) {
@@ -28,14 +23,11 @@ function parseReadiness(value: string): number {
   return parsed;
 }
 
-export function createChitkingProgram(
-  options: ChitkingProgramOptions = {},
-): Command {
+export function createChitkingProgram(): Command {
   const program = new Command();
-  const programName = options.name ?? "chitking";
 
   program
-    .name(programName)
+    .name("chitking")
     .description(PRODUCT_DESCRIPTION)
     .version(VERSION, "-v, --version")
     .option("--status", "show current Chitking migration status")
@@ -48,7 +40,7 @@ export function createChitkingProgram(
   program
     .command("init")
     .description(
-      "Initialize Research Trellis scaffold in the current repository",
+      "Initialize Chitking scaffold in the current repository",
     )
     .action(() => runWithErrors(() => chitkingInit()));
 
@@ -117,7 +109,7 @@ export function createChitkingProgram(
 
   program.addHelpText(
     "after",
-    "\nChitking means 哲徑: a path for reflective research. This bridge release preserves RT scaffold names while migration continues.",
+    "\nChitking means 哲徑: a path for reflective research.",
   );
 
   return program;
@@ -139,9 +131,7 @@ function runWithErrors(action: () => void): void {
 }
 
 export function run(argv: readonly string[] = process.argv): void {
-  const programName =
-    argv[1] !== undefined ? path.basename(argv[1], ".js") : "chitking";
-  createChitkingProgram({ name: programName }).parse(argv);
+  createChitkingProgram().parse(argv);
 }
 
 const isDirectEntrypoint =
