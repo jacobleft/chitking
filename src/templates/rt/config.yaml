@@ -1,0 +1,99 @@
+schema_version: 1
+maturity_ladder:
+  - seed
+  - briefed
+  - gap-identified
+  - specified
+  - verification-planned
+  - implementation-ready
+  - evidence-recorded
+  - synthesis-ready
+readiness_thresholds:
+  seed: 1
+  briefed: 1
+  gap-identified: 2
+  specified: 2
+  verification-planned: 3
+  implementation-ready: 4
+  evidence-recorded: 4
+  synthesis-ready: 5
+roles:
+  plan:
+    min_maturity: briefed
+    min_readiness: 1
+    warnings:
+      - Stop before assigning implementation work.
+    prompt:
+      objective: Turn the theory brief and capability gap into a safe research plan.
+      stop_conditions:
+        - The thread lacks a clear current claim.
+        - The next action would require implementation without a human checkpoint.
+  dreamer:
+    min_maturity: seed
+    min_readiness: 1
+    warnings:
+      - Dreamer is ideation-only; do not create implementation tasks.
+      - Dreamer output requires human, oracle, or planner review before implementation.
+      - Never hand Dreamer work directly to build or Executor roles.
+    prompt:
+      objective: Generate hypotheses, strange analogies, candidate mechanisms, edge cases, and possible theory directions from the theory brief, open questions, constraints, unresolved objections, and failed paths.
+      stop_conditions:
+        - The output would create or assign implementation tasks.
+        - The output would hand work directly to build or Executor roles.
+        - The ideation candidate is being treated as approved implementation work without human, oracle, or planner review.
+  build:
+    min_maturity: implementation-ready
+    min_readiness: 4
+    warnings:
+      - Build work is risky before verification obligations are explicit.
+    prompt:
+      objective: Implement only the approved next safe action for this research thread.
+      stop_conditions:
+        - The thread is below implementation-ready maturity.
+        - The task requires changing maturity or readiness.
+  verify:
+    min_maturity: verification-planned
+    min_readiness: 3
+    warnings:
+      - Verification should cite concrete obligations from the thread.
+    prompt:
+      objective: Check whether evidence satisfies the thread's verification obligations.
+      stop_conditions:
+        - Verification obligations are missing or ambiguous.
+        - A finding would change readiness without oracle or human review.
+  synthesize:
+    min_maturity: synthesis-ready
+    min_readiness: 5
+    warnings:
+      - Synthesis should wait until evidence is recorded and reviewed.
+    prompt:
+      objective: Synthesize stable conclusions from recorded evidence and failed paths.
+      stop_conditions:
+        - Evidence is too thin for synthesis.
+        - The synthesis would hide unresolved capability gaps.
+  review:
+    min_maturity: specified
+    min_readiness: 2
+    warnings:
+      - Review is advisory; do not mutate readiness or maturity.
+    prompt:
+      objective: Review thread consistency, risk, and readiness evidence for a human checkpoint.
+      stop_conditions:
+        - The review requires oracle judgment.
+        - The thread source of truth is missing required sections.
+  oracle:
+    min_maturity: specified
+    min_readiness: 2
+    warnings:
+      - Oracle output may recommend readiness, but humans must apply it.
+    prompt:
+      objective: Provide explicit readiness and maturity judgment for human consideration.
+      stop_conditions:
+        - The judgment depends on unrecorded work.
+        - The requested change would bypass a human checkpoint.
+project_incomplete_markers:
+  - TODO
+  - TBD
+  - "<"
+  - ">"
+  - "..."
