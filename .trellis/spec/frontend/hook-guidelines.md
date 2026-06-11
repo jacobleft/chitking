@@ -1,51 +1,81 @@
 # Hook Guidelines
 
-> How hooks are used in this project.
+> Current hook reality: no React hooks; one generated OpenCode plugin hook template.
 
 ---
 
 ## Overview
 
-<!--
-Document your project's hook conventions here.
+Chitking has no frontend custom hooks because it has no browser UI. Do not add `use*` hooks or React stateful logic for current CLI work.
 
-Questions to answer:
-- What custom hooks do you have?
-- How do you handle data fetching?
-- What are the naming conventions?
-- How do you share stateful logic?
--->
-
-(To be filled by the team)
+The only "hook"-like code in the repository is the generated OpenCode plugin template at `src/templates/opencode/plugins/inject-chitking-context.js`. It is an optional platform adapter created by `chitking init`, not a product source-of-truth layer.
 
 ---
 
 ## Custom Hook Patterns
 
-<!-- How to create and structure custom hooks -->
+No custom frontend hook pattern exists.
 
-(To be filled by the team)
+For reusable CLI logic, current code uses plain functions in `src/commands/chitking.ts`, such as:
+
+- `readYamlRecord()` for YAML parsing.
+- `parseThreadContent()` for thread frontmatter/body parsing.
+- `roleRiskWarnings()` for role gate warnings.
+- `findStalePackets()` for generated packet freshness checks.
+
+Do not name plain command helpers with a `use` prefix.
 
 ---
 
 ## Data Fetching
 
-<!-- How data fetching is handled (React Query, SWR, etc.) -->
+There is no client/server data fetching. Current data access is local filesystem and Git metadata:
 
-(To be filled by the team)
+```ts
+const dirtyOutput = execFileSync(
+  "git",
+  ["status", "--porcelain", "--untracked-files=all"],
+  {
+    cwd,
+    encoding: "utf-8",
+    stdio: ["ignore", "pipe", "ignore"],
+  },
+).trimEnd();
+```
+
+Generated plugin hooks read local files only and should never mutate Chitking state.
 
 ---
 
 ## Naming Conventions
 
-<!-- Hook naming rules (use*, etc.) -->
+- Command helpers use verbs or nouns that describe the operation: `loadConfig`, `resolveActiveThread`, `writeActiveState`, `appendToSection`.
+- Generated plugin hook functions describe their adapter role: `buildRoleContext`, `buildMainBreadcrumb`, `loadChitkingState`.
+- Reserve `use*` names for a future real frontend hook layer, if one is added and documented.
 
-(To be filled by the team)
+---
+
+## Example: Read-Only Generated Platform Hook
+
+`src/templates/opencode/plugins/inject-chitking-context.js` injects context but intentionally does not write state:
+
+```js
+"tool.execute.before": async (input, output) => {
+  try {
+    if (!isChitkingRepo(directory)) return
+    if ((input?.tool || "").toLowerCase() !== "task") return
+    // ...read state and prepend bounded context...
+  } catch {
+    // Best-effort context only; never block OpenCode tool execution.
+  }
+}
+```
 
 ---
 
 ## Common Mistakes
 
-<!-- Hook-related mistakes your team has made -->
-
-(To be filled by the team)
+- Do not confuse generated platform hooks with durable Chitking product truth.
+- Do not add React hooks to share CLI state.
+- Do not let plugin hook failures block tool execution.
+- Do not let plugin hooks change maturity, readiness, `thread.md`, `active.yaml`, `config.yaml`, or generated packets.
