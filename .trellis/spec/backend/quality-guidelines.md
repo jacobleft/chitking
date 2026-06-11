@@ -113,7 +113,7 @@ try {
 - `demo/.opencode/` is generated adapter/tooling context, not durable research truth.
 - `demo/research/*/context/` is generated/cache context and must not be treated as source of truth.
 - `demo/` must not contain `.trellis/` runtime state.
-- CI uses Node 20 and pnpm, matching current package-manager expectations.
+- CI uses Node 22 and pnpm 11, matching current package-manager compatibility expectations.
 
 ### 4. Validation & Error Matrix
 
