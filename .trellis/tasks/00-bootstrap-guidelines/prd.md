@@ -24,6 +24,57 @@ the rest conversationally.
 - [ ] Fill backend guidelines
 - [ ] Fill frontend guidelines
 - [ ] Add code examples
+- [x] Add Chitking product doctrine
+
+---
+
+## Current Scope: Chitking Product Doctrine
+
+The immediate bootstrap need is not detailed TypeScript CLI architecture. That
+architecture is still evolving quickly. The durable intel Chitking needs first is
+its product doctrine: goal, objective, purpose, philosophy, non-goals, and
+boundaries.
+
+### Requirements
+
+- Add a durable Chitking doctrine guide under `.trellis/spec/guides/`.
+- Make it future-facing and stable enough for implement/check sub-agents to use
+  when product decisions are ambiguous.
+- Preserve Chitking as a standalone product with Trellis only as development
+  harness and inspiration.
+- Do not describe Chitking as a derivative product or runtime extension of
+  Trellis.
+- Keep all product wording Chitking-native and avoid historical bridge labels.
+- Explain boundaries among:
+  - `.chitking/` as Chitking product state.
+  - `.trellis/` as development workflow state.
+  - `research/` as user research content.
+- Emphasize human-owned research judgment, maturity, readiness, and source of
+  truth.
+- Treat generated context packets and tool adapters as cache/context, not
+  durable product truth.
+
+### Acceptance Criteria
+
+- [x] `.trellis/spec/guides/chitking-product-doctrine.md` exists.
+- [x] `.trellis/spec/guides/index.md` links to the doctrine guide.
+- [x] Doctrine includes purpose, goals / objectives, philosophy, non-goals,
+  boundaries, invariants, decision principles, and uncertainty handling.
+- [x] Doctrine avoids historical bridge labels and derivative-product framing.
+- [x] Existing Chitking build, tests, lint, typecheck, and CLI help still pass.
+- [x] PRD validation notes record validation results.
+
+### Validation Notes
+
+- Added `.trellis/spec/guides/chitking-product-doctrine.md` with purpose, goals / objectives, philosophy, non-goals, boundaries, product invariants, decision principles, and uncertainty guidance.
+- Updated `.trellis/spec/guides/index.md` to link to the doctrine guide.
+- Confirmed the new doctrine and guide index text contain no historical bridge wording or derivative-product framing.
+- `pnpm build` passed.
+- `pnpm test` passed: 2 test files, 16 tests.
+- `pnpm lint` passed.
+- `pnpm typecheck` passed.
+- `node bin/chitking.js --help` passed.
+- `git diff --check` passed.
 
 ---
 
