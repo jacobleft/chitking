@@ -101,3 +101,5 @@ Rejected for MVP:
 - `node bin/chitking.js --help` shows top-level thread commands and no `thread` namespace.
 - Follow-up: aligned the generated Chitking workflow skill template and committed demo copy with the top-level thread lifecycle command set, including `archive/delete --yes` confirmation requirements and generated-context-as-cache boundaries.
 - Follow-up verification passed: `pnpm build`, `pnpm test` (24 tests passed), `pnpm lint`, `pnpm typecheck`, and `git diff --check`.
+- Follow-up request: remove committed `demo/.chitking/` runtime product state. The demo now keeps user-owned `research/` content and the intentionally committed `.opencode/` adapter surface, ignores locally generated `demo/.chitking/`, and compares only adapter files against a fresh `chitking init` fixture.
+- Current follow-up verification passed: `pnpm test` (24 tests passed), `pnpm lint`, `pnpm typecheck`, `pnpm build`, `node bin/chitking.js --help`, and `git diff --check`.

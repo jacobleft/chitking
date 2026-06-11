@@ -39,7 +39,6 @@ test/
 └── templates/               # template helper/copy tests
 
 demo/                        # committed Chitking example workspace and fixture
-├── .chitking/               # Chitking product state
 ├── .opencode/               # generated adapter/tooling surface
 └── research/                # user-owned research content
 
@@ -57,7 +56,7 @@ demo/                        # committed Chitking example workspace and fixture
 - Keep path-building helpers near the state they address. Example: `getThreadPath()`, `getContextPath()`, and `getOpenCodeAdapterPath()` live with the command implementation that uses them.
 - Keep template resolution in `src/templates/extract.ts`; command code imports `getChitkingRuntimeTemplatePath()` and `getOpenCodeTemplatePath()` rather than hard-coding `dist` paths.
 - Add tests beside the area being changed: command behavior in `test/commands/chitking.test.ts`, template resolution in `test/templates/extract.test.ts`.
-- Keep the committed demo workspace at top-level `demo/`. It is both a human-readable example and a regression fixture; tests for it live in `test/demo/`.
+- Keep the committed demo workspace at top-level `demo/`. It is both a human-readable example and a regression fixture; tests for it live in `test/demo/`. Do not commit `demo/.chitking/`; local runtime product state may be generated there during experimentation but is ignored.
 - Keep CI workflow files under `.github/workflows/`; the default quality workflow is `.github/workflows/ci.yml`.
 
 ---
