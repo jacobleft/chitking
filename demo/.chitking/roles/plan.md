@@ -1,0 +1,31 @@
+# Chitking Plan Role
+
+## Objective
+
+Turn the theory brief and capability gap into a safe research plan.
+
+## Scope and Gates
+
+- Minimum maturity: briefed
+- Minimum readiness: 1
+
+## Required Inputs
+
+- Read `research/project.md` before the active thread.
+- Read the active `research/<thread>/thread.md`.
+- Use the per-thread packet from `chitking pack --role plan` for current file references, maturity, readiness, warnings, and stop conditions.
+
+## Warnings
+
+- Stop before assigning implementation work.
+
+## Stop Conditions
+
+- The thread lacks a clear current claim.
+- The next action would require implementation without a human checkpoint.
+
+## Universal Boundaries
+
+- Do not change maturity or readiness; humans own those checkpoints.
+- Do not treat generated packets as source of truth; project and thread Markdown files are canonical.
+- Record factual output with `chitking record` only when a human or calling workflow asks for it.

@@ -21,9 +21,9 @@ the rest conversationally.
 
 ## Status (update the checkboxes as you complete each item)
 
-- [ ] Fill backend guidelines
-- [ ] Fill frontend guidelines
-- [ ] Add code examples
+- [x] Fill backend guidelines
+- [x] Fill frontend guidelines
+- [x] Add code examples
 - [x] Add Chitking product doctrine
 
 ---
@@ -75,6 +75,107 @@ boundaries.
 - `pnpm typecheck` passed.
 - `node bin/chitking.js --help` passed.
 - `git diff --check` passed.
+- Filled backend/core CLI guidelines in `.trellis/spec/backend/` with current Chitking directory structure, filesystem/YAML persistence conventions, CLI error handling, console output rules, and quality expectations.
+- Filled frontend/user-facing guidelines in `.trellis/spec/frontend/` to document the current no-browser-frontend reality and the actual CLI/adapters surface instead of inventing React/component/hook patterns.
+- Added real code examples from `src/cli/chitking.ts`, `src/commands/chitking.ts`, `src/templates/extract.ts`, `src/templates/opencode/plugins/inject-chitking-context.js`, `src/index.ts`, and `test/commands/chitking.test.ts`.
+- Updated backend and frontend spec indexes with filled statuses, pre-development checklists, and quality checks.
+- Confirmed `.trellis/spec/` contains no remaining bootstrap placeholder text.
+- Re-ran validation after filling guidelines: `pnpm build` passed.
+- Re-ran validation after filling guidelines: `pnpm test` passed: 2 test files, 16 tests.
+- Re-ran validation after filling guidelines: `pnpm lint` passed.
+- Re-ran validation after filling guidelines: `pnpm typecheck` passed.
+- Re-ran validation after filling guidelines: `node bin/chitking.js --help` passed.
+- Re-ran validation after filling guidelines: `git diff --check` passed.
+- `python3 ./.trellis/scripts/task.py validate 00-bootstrap-guidelines` passed.
+
+---
+
+## Next Scope: Demo Fixture and CI Autotest
+
+The overarching Trellis spec bootstrap is now treated as the baseline. The next
+phase is to add a concrete demo/testing surface for Chitking and wire automated
+CI checks around it.
+
+### What I already know
+
+- The repo has Vitest configured via `vitest.config.ts` and test TypeScript via
+  `tsconfig.test.json`.
+- Current tests live under `test/commands/` and `test/templates/`.
+- There is no existing `.github/workflows/` CI workflow.
+- Current package scripts include `build`, `test`, `lint`, `format:check`, and
+  `typecheck`.
+- `package.json` already has unrelated dirty state from before this session and
+  should not be overwritten casually.
+
+### Requirements (evolving)
+
+- Add a committed top-level `demo/` folder that can be used as a stable
+  Chitking demo and test fixture.
+- Make the demo Chitking-native: it should demonstrate `.chitking/` product
+  state, `research/` user research content, and generated agent/tooling cache
+  boundaries without describing Chitking as a Trellis derivative.
+- Add automated tests that exercise the demo path or verify the demo stays in
+  sync with current Chitking scaffold expectations.
+- Add GitHub Actions CI automation that runs the project quality checks
+  automatically. The repo currently has no `.github/workflows/` files.
+- Preserve Chitking as a standalone product and avoid Trellis runtime coupling.
+
+### Technical Approach
+
+- Use a committed top-level `demo/` fixture rather than hiding it under
+  `test/fixtures/` or generating it only at test runtime.
+- Keep `demo/` human-readable and suitable for both documentation and regression
+  checks.
+- Prefer CI coverage based on existing package scripts: install dependencies,
+  run `pnpm build`, `pnpm test`, `pnpm lint`, `pnpm typecheck`, and a CLI help
+  smoke check.
+- Include `pnpm format:check` in CI if the formatter already passes after the
+  demo files are added.
+
+### Decision (ADR-lite)
+
+**Context**: The filled Trellis spec files are broad project guidance. Chitking
+also needs a concrete product fixture and automated CI path so future changes
+can be tested against a realistic workspace.
+
+**Decision**: Add a committed top-level `demo/` fixture and wire CI around the
+existing package scripts plus CLI smoke checks.
+
+**Consequences**: The demo becomes visible product documentation and a regression
+target. Tests must keep the fixture from drifting, and generated/cache-like
+outputs must remain clearly separate from durable research truth.
+
+### Open Questions
+
+- Confirm the exact MVP: committed `demo/` fixture + demo regression test + CI
+  workflow using existing project scripts.
+
+### Acceptance Criteria (evolving)
+
+- [x] Top-level `demo/` folder exists with Chitking-native example content.
+- [x] Demo content clearly distinguishes `.chitking/` product state,
+  `research/` user research content, and generated context/tooling artifacts.
+- [x] Automated tests exercise the demo path or generated demo behavior.
+- [x] CI workflow runs install, build, test, lint, typecheck, and CLI help/smoke
+  checks as appropriate.
+- [x] Format checking compatibility was assessed; CI omits it because current
+  repo formatting fails outside the demo changes.
+- [x] Local validation passes before commit.
+
+### Demo / CI Validation Notes
+
+- Added top-level `demo/` with `.chitking/` product state, `research/` source-of-truth content, `.opencode/` generated tool adapters, and a `research/contact-stability/context/README.md` cache boundary note.
+- Demo wording is Chitking-native and includes no `.trellis/` runtime state or historical bridge labels.
+- Added `test/demo/demo.test.ts` to assert demo boundaries, scaffold config alignment, generated role/adapter presence, exact generated role/adapter scaffold parity, active thread state, human-owned readiness, and absence of legacy framing.
+- Added `.github/workflows/ci.yml` to run stable checkout, pnpm setup, Node 20 setup, `pnpm install --frozen-lockfile`, `pnpm build`, `pnpm test`, `pnpm lint`, `pnpm typecheck`, and `node bin/chitking.js --help`.
+- `pnpm build` passed.
+- `pnpm test` passed: 3 test files, 20 tests.
+- `pnpm lint` passed.
+- `pnpm typecheck` passed.
+- `node bin/chitking.js --help` passed.
+- `git diff --check` passed.
+- `python3 ./.trellis/scripts/task.py validate 00-bootstrap-guidelines` passed.
+- `pnpm format:check` was evaluated and failed on pre-existing formatting drift in `src/cli/chitking.ts`, `src/commands/chitking.ts`, `src/index.ts`, `src/templates/opencode/plugins/inject-chitking-context.js`, `test/commands/chitking.test.ts`, and `test/templates/extract.test.ts`; CI intentionally does not include it yet. The new demo test file was formatted with Prettier.
 
 ---
 
