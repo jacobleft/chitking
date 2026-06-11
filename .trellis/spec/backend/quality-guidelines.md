@@ -105,6 +105,7 @@ try {
 - Demo regression tests: `test/demo/demo.test.ts`.
 - CI workflow: `.github/workflows/ci.yml` with one `quality` job.
 - Required CI command sequence: `pnpm install --frozen-lockfile`, `pnpm build`, `pnpm test`, `pnpm lint`, `pnpm typecheck`, `node bin/chitking.js --help`.
+- CI JavaScript actions should use Node-24-runtime-compatible major versions, while the Chitking project runtime check remains on Node 22 unless a task explicitly adds a runtime matrix.
 
 ### 3. Contracts
 
@@ -113,7 +114,10 @@ try {
 - `demo/.opencode/` is generated adapter/tooling context, not durable research truth.
 - `demo/research/*/context/` is generated/cache context and must not be treated as source of truth.
 - `demo/` must not contain `.trellis/` runtime state.
-- CI uses Node 22 and pnpm 11, matching current package-manager compatibility expectations.
+- CI separates three Node/runtime contracts:
+  - GitHub Actions runtime: use Node-24-runtime-compatible action releases (`actions/checkout@v5`, `pnpm/action-setup@v6`, `actions/setup-node@v6`) so action internals are ready for GitHub's Node 24 default.
+  - CI project runtime: `actions/setup-node` installs Node `22.x` for shell steps because pnpm `11.5.2` requires Node 22+ and Node 22 is the current baseline CI runtime.
+  - Package runtime baseline: `package.json` declares `engines.node >=20.0.0`; `@types/node` is a compile-time API surface and must not be treated as a runtime maximum.
 
 ### 4. Validation & Error Matrix
 
@@ -122,12 +126,15 @@ try {
 - Demo generated role/adapter surface drifts from fresh `chitking init` -> failing scaffold parity test.
 - Demo text reintroduces historical bridge labels or derivative framing -> failing legacy-framing test.
 - CI references a package script that does not pass locally -> CI workflow must not include that script yet; document the omission in the PRD.
+- CI pins pnpm 11 while using Node 20 or lower for shell steps -> setup/install failure; use Node 22+ for the project runtime.
+- CI action majors declare Node 20 action runtimes when GitHub emits Node 24 deprecation warnings -> upgrade actions to Node-24-runtime-compatible majors before the cutoff.
 
 ### 5. Good/Base/Bad Cases
 
 - Good: update template, run `chitking init` into a temp directory, compare generated scaffold files against `demo/`, and update demo intentionally.
 - Base: add user-owned research example content under `demo/research/` while keeping generated/cache folders labeled as non-authoritative.
 - Bad: add generated context packets as durable assertions, add `.trellis/` under `demo/`, or include `format:check` in CI while it fails on current tracked files.
+- Bad: change only `node-version` to `24.x` and assume GitHub Action internals no longer run on Node 20; action runtime and project runtime are separate.
 
 ### 6. Tests Required
 
@@ -137,6 +144,7 @@ try {
 - Assert generated scaffold files match a fresh `chitkingInit(tempDir)` where feasible.
 - Assert human-owned readiness/maturity wording remains present.
 - Assert historical bridge labels and legacy command names are absent.
+- For CI runtime changes, run local project checks and push to GitHub to verify the workflow actually executes.
 
 ### 7. Wrong vs Correct
 
@@ -162,6 +170,27 @@ try {
   run: pnpm typecheck
 - name: CLI help smoke test
   run: node bin/chitking.js --help
+```
+
+#### Wrong
+
+```yaml
+- uses: actions/setup-node@v6
+  with:
+    node-version: 24.x # this alone does not update action internals
+```
+
+#### Correct
+
+```yaml
+- uses: actions/checkout@v5
+- uses: pnpm/action-setup@v6
+  with:
+    version: 11.5.2
+- uses: actions/setup-node@v6
+  with:
+    node-version: 22.x
+    cache: pnpm
 ```
 
 Document any intentionally omitted check in the task PRD until the repo is ready to enforce it.
