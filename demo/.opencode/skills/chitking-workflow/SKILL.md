@@ -28,6 +28,14 @@ Humans own research direction, maturity, and readiness checkpoints. Agents may i
 
 ## Command Boundaries
 
+- Thread lifecycle commands are top-level: `chitking new <title> [--slug <slug>]`, `chitking list`, `chitking show [thread]`, `chitking focus <thread>`, `chitking rename <thread> <title>`, `chitking archive <thread> --yes`, `chitking restore <thread>`, and `chitking delete <thread> --yes`.
+- `chitking new` creates `research/<thread>/thread.md`, creates the thread context cache directory, and focuses the new thread. Only run it when the user wants a new durable research thread.
+- `chitking list` shows non-archived threads. `chitking show [thread]` summarizes the named thread or the active thread, including the source thread file and generated context cache path.
+- `chitking focus <thread>` sets the active-thread pointer for an existing non-archived thread. Do not focus an archived thread; restore it first if the user asks to resume it.
+- `chitking rename <thread> <title>` updates the human-readable title in `research/<thread>/thread.md` while keeping the slug/directory stable.
+- `chitking archive <thread> --yes` marks a thread archived and removes it from normal list/focus behavior. The explicit `--yes` is required because this hides active durable research state from the normal workflow.
+- `chitking restore <thread>` restores an archived thread. It does not require `--yes` because it is an undo/recovery operation.
+- `chitking delete <thread> --yes` removes the thread's durable `research/<thread>/` directory. The explicit `--yes` is required; never delete a thread unless the user clearly requested deletion.
 - `chitking orient` reads the active thread, source files, config, generated packets, and Git activity to summarize maturity, readiness, blockers, stale packets, risky roles, and next safe actions. Use it to orient; do not treat it as permission to mutate files.
 - `chitking step` changes maturity/readiness and records the reason in `thread.md`. Because humans own maturity/readiness, only run or emulate this command when explicitly instructed by the user or calling workflow.
 - `chitking pack --role <role>` regenerates `research/<thread>/context/<role>.yaml` for a role. Packets are generated cache and should not replace reading `research/project.md` and `research/<thread>/thread.md`.
@@ -40,4 +48,4 @@ Humans own research direction, maturity, and readiness checkpoints. Agents may i
 3. Treat maturity/readiness as human checkpoints. Recommend changes when appropriate, but do not silently apply them.
 4. Treat generated context packets as cache. Regenerate them with `chitking pack` when stale rather than editing them by hand.
 5. Respect role contracts and stop conditions before acting as a specialized Chitking role.
-6. Ask before changing source-of-truth files unless the user explicitly requested that change.
+6. Ask before changing source-of-truth files or thread lifecycle state unless the user explicitly requested that change.

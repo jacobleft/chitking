@@ -99,3 +99,5 @@ Rejected for MVP:
   - `node bin/chitking.js --help`
   - `git diff --check`
 - `node bin/chitking.js --help` shows top-level thread commands and no `thread` namespace.
+- Follow-up: aligned the generated Chitking workflow skill template and committed demo copy with the top-level thread lifecycle command set, including `archive/delete --yes` confirmation requirements and generated-context-as-cache boundaries.
+- Follow-up verification passed: `pnpm build`, `pnpm test` (24 tests passed), `pnpm lint`, `pnpm typecheck`, and `git diff --check`.
