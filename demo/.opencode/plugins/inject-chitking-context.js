@@ -27,6 +27,8 @@ function isChitkingRepo(directory) {
 function parseScalar(value) {
   const trimmed = String(value || "").trim()
   if (trimmed === "null" || trimmed === "") return null
+  if (trimmed === "true") return true
+  if (trimmed === "false") return false
   if (/^-?\d+$/.test(trimmed)) return Number(trimmed)
   return trimmed.replace(/^['"]|['"]$/g, "")
 }
@@ -161,7 +163,7 @@ function loadChitkingState(directory, role = null) {
   const activeThread = typeof active.active_thread === "string" ? active.active_thread : null
 
   if (!activeThread) {
-    return { activeThread: null, config, projectPath, missing: "No active Chitking thread. Run chitking thread new or chitking focus <thread>." }
+    return { activeThread: null, config, projectPath, missing: "No active Chitking thread. Run chitking new <title> or chitking focus <thread>." }
   }
 
   const threadPath = `research/${activeThread}/thread.md`
@@ -171,6 +173,9 @@ function loadChitkingState(directory, role = null) {
   }
 
   const thread = parseThreadFrontmatter(threadText)
+  if (thread.archived === true) {
+    return { activeThread, config, projectPath, threadPath, missing: `Active Chitking thread is archived: ${activeThread}. Run chitking restore ${activeThread} or chitking focus <thread>.` }
+  }
   const packetPath = role ? `research/${activeThread}/context/${role}.yaml` : null
   const packetExists = packetPath ? existsSync(join(directory, packetPath)) : false
   const roleConfig = role ? config.roles[role] || { warnings: [], prompt: { stop_conditions: [] } } : null

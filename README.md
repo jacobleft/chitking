@@ -12,8 +12,14 @@ Chitking now generates Chitking-native scaffold names:
 Currently migrated:
 
 - `chitking init`
-- `chitking thread new <title> [--slug <slug>]`
-- `chitking focus [thread]`
+- `chitking new <title> [--slug <slug>]`
+- `chitking list`
+- `chitking show [thread]`
+- `chitking focus <thread>`
+- `chitking rename <thread> <title>`
+- `chitking archive <thread> --yes`
+- `chitking restore <thread>`
+- `chitking delete <thread> --yes`
 - `chitking orient`
 - `chitking step [--to <maturity>] [--readiness <0-5>] [--reason <text>]`
 - `chitking pack --role <role>`

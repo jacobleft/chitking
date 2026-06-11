@@ -44,7 +44,7 @@ src/
 
 ## Naming Conventions
 
-- CLI command names are lowercase verbs/nouns: `init`, `thread new`, `focus`, `orient`, `step`, `pack`, `record`.
+- CLI command names are lowercase verbs/nouns: `init`, `new`, `list`, `show`, `focus`, `rename`, `archive`, `restore`, `delete`, `orient`, `step`, `pack`, `record`.
 - Generated adapter names use Chitking-native prefixes: `chitking-plan.md`, `chitking-build.md`, `chitking-workflow`.
 - Runtime command descriptions should use Chitking product terms: thread, maturity, readiness, role packet, source of truth.
 

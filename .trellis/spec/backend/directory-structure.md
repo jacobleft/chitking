@@ -65,7 +65,7 @@ demo/                        # committed Chitking example workspace and fixture
 ## Naming Conventions
 
 - Runtime source files use lowercase names matching the product or concern: `chitking.ts`, `extract.ts`, `constants.ts`.
-- Exported command functions use the `chitking*` prefix: `chitkingInit`, `chitkingThreadNew`, `chitkingPack`, `chitkingRecord`.
+- Exported command functions use the `chitking*` prefix: `chitkingInit`, `chitkingNew`, `chitkingPack`, `chitkingRecord`.
 - Runtime state constants use uppercase `const` names near the top of `src/commands/chitking.ts`, such as `CHITKING_DIR`, `RESEARCH_DIR`, `ACTIVE_FILE`, and `THREAD_FILE`.
 - Generated product artifacts use Chitking-native names: `.chitking/`, `research/`, `chitking-*`, and `inject-chitking-context.js`.
 - Slugs are lowercase letters/numbers/hyphens only. Existing enforcement: `validateSlug()` compares the provided slug to `slugifyTitle(slug)` and rejects mismatches.

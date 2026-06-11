@@ -22,7 +22,7 @@ Examples from `src/commands/chitking.ts`:
 
 ```ts
 throw new Error("Run chitking init before using Chitking commands.");
-throw new Error("No active Chitking thread. Run chitking thread new first.");
+throw new Error("No active Chitking thread. Run chitking new <title> first.");
 throw new Error(`Thread already exists: ${slug}`);
 throw new Error("chitking step --to requires --reason.");
 ```

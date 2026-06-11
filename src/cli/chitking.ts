@@ -3,13 +3,19 @@ import { pathToFileURL } from "node:url";
 import chalk from "chalk";
 
 import {
+  chitkingArchive,
+  chitkingDelete,
   chitkingFocus,
   chitkingInit,
+  chitkingList,
+  chitkingNew,
   chitkingOrient,
   chitkingPack,
   chitkingRecord,
+  chitkingRename,
+  chitkingRestore,
+  chitkingShow,
   chitkingStep,
-  chitkingThreadNew,
   formatChitkingStatus,
   parseRecordType,
 } from "../commands/chitking.js";
@@ -36,6 +42,7 @@ export function createChitkingProgram(): Command {
         console.log(formatChitkingStatus());
       }
     });
+  program.allowExcessArguments(false);
 
   program
     .command("init")
@@ -44,23 +51,67 @@ export function createChitkingProgram(): Command {
     )
     .action(() => runWithErrors(() => chitkingInit()));
 
-  const thread = program.command("thread").description("Manage research threads");
-
-  thread
+  program
     .command("new")
     .description("Create and focus a new research thread")
     .argument("<title>", "Thread title")
     .option("--slug <slug>", "Override generated slug")
     .action((title: string, options: { slug?: string }) =>
-      runWithErrors(() => chitkingThreadNew(title, options)),
+      runWithErrors(() => chitkingNew(title, options)),
     );
 
   program
+    .command("list")
+    .description("List non-archived research threads")
+    .action(() => runWithErrors(() => chitkingList()));
+
+  program
+    .command("show")
+    .description("Show a research thread summary")
+    .argument("[thread]", "Thread slug to show; defaults to active thread")
+    .action((thread?: string) => runWithErrors(() => chitkingShow(thread)));
+
+  program
     .command("focus")
-    .description("Show or set the active research thread")
-    .argument("[thread]", "Thread slug to focus")
-    .action((activeThread?: string) =>
+    .description("Set the active research thread")
+    .argument("<thread>", "Thread slug to focus")
+    .action((activeThread: string) =>
       runWithErrors(() => chitkingFocus(activeThread)),
+    );
+
+  program
+    .command("rename")
+    .description("Rename a research thread without changing its slug")
+    .argument("<thread>", "Thread slug to rename")
+    .argument("<title>", "New human-readable thread title")
+    .action((thread: string, title: string) =>
+      runWithErrors(() => chitkingRename(thread, title)),
+    );
+
+  program
+    .command("archive")
+    .description("Archive a research thread")
+    .argument("<thread>", "Thread slug to archive")
+    .option("--yes", "Confirm archival")
+    .action((thread: string, options: { yes?: boolean }) =>
+      runWithErrors(() => chitkingArchive(thread, options)),
+    );
+
+  program
+    .command("restore")
+    .description("Restore an archived research thread")
+    .argument("<thread>", "Thread slug to restore")
+    .action((thread: string) =>
+      runWithErrors(() => chitkingRestore(thread)),
+    );
+
+  program
+    .command("delete")
+    .description("Delete a research thread directory")
+    .argument("<thread>", "Thread slug to delete")
+    .option("--yes", "Confirm deletion")
+    .action((thread: string, options: { yes?: boolean }) =>
+      runWithErrors(() => chitkingDelete(thread, options)),
     );
 
   program

@@ -1,0 +1,7 @@
+{"file":".trellis/spec/backend/index.md","reason":"Verify CLI change follows required pre-development and quality checklist."}
+{"file":".trellis/spec/backend/directory-structure.md","reason":"Verify thread lifecycle commands preserve expected Chitking filesystem boundaries."}
+{"file":".trellis/spec/backend/database-guidelines.md","reason":"Verify persistence changes keep YAML/Markdown thread contracts valid."}
+{"file":".trellis/spec/backend/error-handling.md","reason":"Verify confirmation failures and missing-thread failures use expected CLI error patterns."}
+{"file":".trellis/spec/backend/logging-guidelines.md","reason":"Verify list/show/lifecycle command output stays concise and CLI-oriented."}
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"Verify tests, help smoke test, and quality gates cover command surface changes."}
+{"file":".trellis/spec/guides/chitking-product-doctrine.md","reason":"Verify no Trellis/legacy product framing leaks into user-facing behavior or docs."}

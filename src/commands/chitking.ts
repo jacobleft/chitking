@@ -71,6 +71,10 @@ export interface NewThreadOptions {
   slug?: string;
 }
 
+export interface ConfirmationOptions {
+  yes?: boolean;
+}
+
 export interface StepOptions {
   to?: string;
   readiness?: number;
@@ -125,6 +129,7 @@ interface ThreadFrontmatter {
   readiness_source: string;
   recorded_commits: string[];
   updated_at: string;
+  archived?: boolean;
 }
 
 interface ParsedThread {
@@ -140,6 +145,15 @@ interface ActiveState {
 interface GitSnapshot {
   dirty: string[];
   recentCommits: string[];
+}
+
+interface ThreadSummary {
+  slug: string;
+  title: string;
+  maturity: string;
+  readiness: number;
+  archived: boolean;
+  updatedAt: string;
 }
 
 function nowIso(): string {
@@ -525,7 +539,7 @@ function parseActiveState(cwd: string): ActiveState {
   const activePath = getActivePath(cwd);
   if (!fs.existsSync(activePath)) {
     throw new Error(
-      "No active Chitking thread. Run chitking thread new first.",
+      "No active Chitking thread. Run chitking new <title> first.",
     );
   }
   const raw = readYamlRecord(activePath);
@@ -545,11 +559,54 @@ function writeActiveState(cwd: string, slug: string | null): void {
   });
 }
 
+function readActiveThreadOrNull(cwd: string): string | null {
+  if (!fs.existsSync(getActivePath(cwd))) {
+    return null;
+  }
+  return parseActiveState(cwd).active_thread;
+}
+
+function clearActiveThreadIfMatches(cwd: string, slug: string): void {
+  if (readActiveThreadOrNull(cwd) === slug) {
+    writeActiveState(cwd, null);
+  }
+}
+
+function readUsableActiveThreadOrNull(cwd: string): string | null {
+  const activeThread = readActiveThreadOrNull(cwd);
+  if (!activeThread) {
+    return null;
+  }
+  if (!fs.existsSync(getThreadPath(cwd, activeThread))) {
+    writeActiveState(cwd, null);
+    return null;
+  }
+  const thread = readThread(cwd, activeThread);
+  if (isThreadArchived(thread)) {
+    writeActiveState(cwd, null);
+    return null;
+  }
+  return activeThread;
+}
+
 function resolveActiveThread(cwd: string): string {
   const active = parseActiveState(cwd);
   if (!active.active_thread) {
     throw new Error(
-      "No active Chitking thread. Run chitking focus <thread> first.",
+      "No active Chitking thread. Run chitking new <title> or chitking focus <thread> first.",
+    );
+  }
+  if (!fs.existsSync(getThreadPath(cwd, active.active_thread))) {
+    writeActiveState(cwd, null);
+    throw new Error(
+      `Active Chitking thread is missing: ${active.active_thread}. Run chitking list or chitking focus <thread>.`,
+    );
+  }
+  const thread = readThread(cwd, active.active_thread);
+  if (isThreadArchived(thread)) {
+    writeActiveState(cwd, null);
+    throw new Error(
+      `Active Chitking thread is archived: ${active.active_thread}. Run chitking restore ${active.active_thread} or chitking focus <thread>.`,
     );
   }
   return active.active_thread;
@@ -604,18 +661,26 @@ function parseThreadContent(content: string): ParsedThread {
   const maturity = stringField(raw, "maturity");
   const readinessSource = stringField(raw, "readiness_source");
   const updatedAt = stringField(raw, "updated_at");
+  const frontmatter: ThreadFrontmatter = {
+    thread,
+    title,
+    maturity,
+    readiness,
+    readiness_source: readinessSource,
+    recorded_commits: recordedCommits,
+    updated_at: updatedAt,
+  };
+  if (raw.archived === true) {
+    frontmatter.archived = true;
+  }
   return {
-    frontmatter: {
-      thread,
-      title,
-      maturity,
-      readiness,
-      readiness_source: readinessSource,
-      recorded_commits: recordedCommits,
-      updated_at: updatedAt,
-    },
+    frontmatter,
     body: match[2],
   };
+}
+
+function isThreadArchived(thread: ParsedThread): boolean {
+  return thread.frontmatter.archived === true;
 }
 
 function stringField(raw: Record<string, unknown>, field: string): string {
@@ -646,6 +711,49 @@ function writeThread(cwd: string, slug: string, thread: ParsedThread): void {
     formatThreadContent(thread),
     "utf-8",
   );
+}
+
+function requireThreadNotArchived(slug: string, thread: ParsedThread): void {
+  if (isThreadArchived(thread)) {
+    throw new Error(
+      `Thread is archived: ${slug}. Run chitking restore ${slug} first.`,
+    );
+  }
+}
+
+function listThreadSummaries(cwd: string, includeArchived = false): ThreadSummary[] {
+  const researchDir = getResearchDir(cwd);
+  if (!fs.existsSync(researchDir)) {
+    return [];
+  }
+
+  return fs
+    .readdirSync(researchDir, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .filter((slug) => fs.existsSync(getThreadPath(cwd, slug)))
+    .map((slug) => {
+      const thread = readThread(cwd, slug);
+      return {
+        slug,
+        title: thread.frontmatter.title,
+        maturity: thread.frontmatter.maturity,
+        readiness: thread.frontmatter.readiness,
+        archived: isThreadArchived(thread),
+        updatedAt: thread.frontmatter.updated_at,
+      };
+    })
+    .filter((summary) => includeArchived || !summary.archived)
+    .sort((left, right) => left.slug.localeCompare(right.slug));
+}
+
+function formatThreadSummary(
+  summary: ThreadSummary,
+  activeThread: string | null,
+): string {
+  const activeText = summary.slug === activeThread ? " [active]" : "";
+  const archivedText = summary.archived ? " [archived]" : "";
+  return `- ${summary.slug} — ${summary.title} (${summary.maturity}, readiness ${summary.readiness})${activeText}${archivedText}`;
 }
 
 function ensureThreadSections(body: string): string[] {
@@ -816,7 +924,7 @@ export function chitkingInit(cwd: string = process.cwd()): void {
   console.log("Chitking initialized.");
 }
 
-export function chitkingThreadNew(
+export function chitkingNew(
   title: string,
   options: NewThreadOptions = {},
   cwd: string = process.cwd(),
@@ -851,22 +959,124 @@ export function chitkingThreadNew(
   return slug;
 }
 
+export function chitkingList(cwd: string = process.cwd()): string {
+  loadConfig(cwd);
+  const activeThread = readUsableActiveThreadOrNull(cwd);
+  const summaries = listThreadSummaries(cwd);
+  const output =
+    summaries.length === 0
+      ? "No non-archived research threads."
+      : summaries
+          .map((summary) => formatThreadSummary(summary, activeThread))
+          .join("\n");
+  console.log(output);
+  return output;
+}
+
+export function chitkingShow(
+  thread?: string,
+  cwd: string = process.cwd(),
+): string {
+  loadConfig(cwd);
+  const slug = thread ? validateSlug(thread) : resolveActiveThread(cwd);
+  const parsedThread = readThread(cwd, slug);
+  const lines = [
+    `Thread: ${slug}`,
+    `Title: ${parsedThread.frontmatter.title}`,
+    `Maturity: ${parsedThread.frontmatter.maturity}`,
+    `Readiness: ${parsedThread.frontmatter.readiness} (${parsedThread.frontmatter.readiness_source})`,
+    `Archived: ${isThreadArchived(parsedThread) ? "yes" : "no"}`,
+    `Updated: ${parsedThread.frontmatter.updated_at}`,
+    `Thread file: ${toRepoPath(cwd, getThreadPath(cwd, slug))}`,
+    `Context cache: ${toRepoPath(cwd, getContextDir(cwd, slug))}`,
+  ];
+  const output = lines.join("\n");
+  console.log(output);
+  return output;
+}
+
 export function chitkingFocus(
   thread?: string,
   cwd: string = process.cwd(),
-): string | null {
+): string {
   if (!thread) {
-    const active = parseActiveState(cwd);
-    console.log(active.active_thread ?? "No active thread");
-    return active.active_thread;
+    throw new Error("chitking focus requires <thread>. Use chitking show or chitking list.");
   }
+  loadConfig(cwd);
   const slug = validateSlug(thread);
-  if (!fs.existsSync(getThreadPath(cwd, slug))) {
-    throw new Error(`Thread not found: ${slug}`);
-  }
+  const parsedThread = readThread(cwd, slug);
+  requireThreadNotArchived(slug, parsedThread);
   writeActiveState(cwd, slug);
   console.log(`Active thread: ${slug}`);
   return slug;
+}
+
+export function chitkingRename(
+  thread: string,
+  title: string,
+  cwd: string = process.cwd(),
+): void {
+  loadConfig(cwd);
+  const cleanTitle = title.trim();
+  if (cleanTitle.length === 0) {
+    throw new Error("chitking rename requires a non-empty title.");
+  }
+  const slug = validateSlug(thread);
+  const parsedThread = readThread(cwd, slug);
+  parsedThread.frontmatter.title = cleanTitle;
+  parsedThread.frontmatter.updated_at = nowIso();
+  writeThread(cwd, slug, parsedThread);
+  console.log(`Renamed research thread: ${slug}`);
+}
+
+export function chitkingArchive(
+  thread: string,
+  options: ConfirmationOptions = {},
+  cwd: string = process.cwd(),
+): void {
+  if (options.yes !== true) {
+    throw new Error("chitking archive requires --yes.");
+  }
+  loadConfig(cwd);
+  const slug = validateSlug(thread);
+  const parsedThread = readThread(cwd, slug);
+  parsedThread.frontmatter.archived = true;
+  parsedThread.frontmatter.updated_at = nowIso();
+  writeThread(cwd, slug, parsedThread);
+  clearActiveThreadIfMatches(cwd, slug);
+  console.log(`Archived research thread: ${slug}`);
+}
+
+export function chitkingRestore(
+  thread: string,
+  cwd: string = process.cwd(),
+): void {
+  loadConfig(cwd);
+  const slug = validateSlug(thread);
+  const parsedThread = readThread(cwd, slug);
+  delete parsedThread.frontmatter.archived;
+  parsedThread.frontmatter.updated_at = nowIso();
+  writeThread(cwd, slug, parsedThread);
+  console.log(`Restored research thread: ${slug}`);
+}
+
+export function chitkingDelete(
+  thread: string,
+  options: ConfirmationOptions = {},
+  cwd: string = process.cwd(),
+): void {
+  if (options.yes !== true) {
+    throw new Error("chitking delete requires --yes.");
+  }
+  loadConfig(cwd);
+  const slug = validateSlug(thread);
+  const threadPath = getThreadPath(cwd, slug);
+  if (!fs.existsSync(threadPath)) {
+    throw new Error(`Thread not found: ${slug}`);
+  }
+  fs.rmSync(getThreadDir(cwd, slug), { recursive: true, force: true });
+  clearActiveThreadIfMatches(cwd, slug);
+  console.log(`Deleted research thread: ${slug}`);
 }
 
 export function chitkingOrient(cwd: string = process.cwd()): string {

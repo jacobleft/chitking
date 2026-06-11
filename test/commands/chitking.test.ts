@@ -7,13 +7,19 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { parse } from "yaml";
 
 import {
+  chitkingArchive,
+  chitkingDelete,
   chitkingFocus,
   chitkingInit,
+  chitkingList,
+  chitkingNew,
   chitkingOrient,
   chitkingPack,
   chitkingRecord,
+  chitkingRename,
+  chitkingRestore,
+  chitkingShow,
   chitkingStep,
-  chitkingThreadNew,
   createChitkingProgram,
   formatChitkingStatus,
   getChitkingStatus,
@@ -64,12 +70,32 @@ describe("chitking command skeleton", () => {
     expect(help).toContain("Chitking (哲徑)");
     expect(help).toContain("--status");
     expect(help).toContain("init");
-    expect(help).toContain("thread");
+    expect(help).toContain("new");
+    expect(help).toContain("list");
+    expect(help).toContain("show");
     expect(help).toContain("focus");
+    expect(help).toContain("rename");
+    expect(help).toContain("archive");
+    expect(help).toContain("restore");
+    expect(help).toContain("delete");
     expect(help).toContain("orient");
     expect(help).toContain("step");
     expect(help).toContain("pack");
     expect(help).toContain("record");
+    expect(help).not.toMatch(/^ {2}thread(?:\s|$)/m);
+  });
+
+  it("does not register the removed thread command namespace", () => {
+    const program = createChitkingProgram();
+    program.exitOverride();
+    program.configureOutput({
+      writeErr: () => undefined,
+      writeOut: () => undefined,
+    });
+
+    expect(() =>
+      program.parse(["thread", "new", "Contact Stability"], { from: "user" }),
+    ).toThrow();
   });
 
   it("initializes the Chitking-native scaffold", () => {
@@ -167,7 +193,7 @@ project_incomplete_markers:
     const cwd = makeTempDir("chitking-plugin-");
     vi.spyOn(console, "log").mockImplementation(() => undefined);
     chitkingInit(cwd);
-    chitkingThreadNew("Contact Stability", {}, cwd);
+    chitkingNew("Contact Stability", {}, cwd);
     const pluginPath = path.join(
       cwd,
       ".opencode",
@@ -240,7 +266,7 @@ project_incomplete_markers:
     vi.spyOn(console, "log").mockImplementation(() => undefined);
     chitkingInit(cwd);
 
-    const slug = chitkingThreadNew("Contact Stability", {}, cwd);
+    const slug = chitkingNew("Contact Stability", {}, cwd);
 
     expect(slug).toBe("contact-stability");
     const threadPath = path.join(cwd, "research", slug, "thread.md");
@@ -260,25 +286,93 @@ project_incomplete_markers:
     );
   });
 
-  it("focus shows or sets active thread without mutating thread.md", () => {
+  it("list, show, and focus inspect or set active threads", () => {
     const cwd = makeTempDir("chitking-focus-");
     vi.spyOn(console, "log").mockImplementation(() => undefined);
     chitkingInit(cwd);
-    chitkingThreadNew("Contact Stability", {}, cwd);
-    chitkingThreadNew("Friction Model", {}, cwd);
+    chitkingNew("Contact Stability", {}, cwd);
+    chitkingNew("Friction Model", {}, cwd);
     const firstThreadPath = path.join(cwd, "research", "contact-stability", "thread.md");
     const before = readText(firstThreadPath);
 
+    expect(chitkingList(cwd)).toContain("friction-model — Friction Model");
+    expect(chitkingShow(undefined, cwd)).toContain("Thread: friction-model");
     expect(chitkingFocus("contact-stability", cwd)).toBe("contact-stability");
-    expect(chitkingFocus(undefined, cwd)).toBe("contact-stability");
+    expect(chitkingShow(undefined, cwd)).toContain("Thread: contact-stability");
     expect(readText(firstThreadPath)).toBe(before);
+  });
+
+  it("rename updates the human title without changing slug or active pointer", () => {
+    const cwd = makeTempDir("chitking-rename-");
+    vi.spyOn(console, "log").mockImplementation(() => undefined);
+    chitkingInit(cwd);
+    chitkingNew("Contact Stability", {}, cwd);
+
+    chitkingRename("contact-stability", "Contact Stability Revisited", cwd);
+
+    const threadPath = path.join(cwd, "research", "contact-stability", "thread.md");
+    expect(existsSync(threadPath)).toBe(true);
+    expect(readFrontmatter(threadPath)).toMatchObject({
+      thread: "contact-stability",
+      title: "Contact Stability Revisited",
+    });
+    expect(readText(path.join(cwd, ".chitking", "active.yaml"))).toContain(
+      "active_thread: contact-stability",
+    );
+  });
+
+  it("archive requires confirmation, hides a thread, and restore makes it focusable", () => {
+    const cwd = makeTempDir("chitking-archive-");
+    vi.spyOn(console, "log").mockImplementation(() => undefined);
+    chitkingInit(cwd);
+    chitkingNew("Contact Stability", {}, cwd);
+
+    expect(() => chitkingArchive("contact-stability", {}, cwd)).toThrow(
+      "chitking archive requires --yes",
+    );
+    chitkingArchive("contact-stability", { yes: true }, cwd);
+
+    const threadPath = path.join(cwd, "research", "contact-stability", "thread.md");
+    expect(readFrontmatter(threadPath).archived).toBe(true);
+    expect(chitkingList(cwd)).not.toContain("contact-stability");
+    expect(chitkingShow("contact-stability", cwd)).toContain("Archived: yes");
+    expect(() => chitkingFocus("contact-stability", cwd)).toThrow(
+      "Thread is archived: contact-stability",
+    );
+    expect(readText(path.join(cwd, ".chitking", "active.yaml"))).toContain(
+      "active_thread: null",
+    );
+
+    chitkingRestore("contact-stability", cwd);
+
+    expect(readFrontmatter(threadPath).archived).toBeUndefined();
+    expect(chitkingFocus("contact-stability", cwd)).toBe("contact-stability");
+  });
+
+  it("delete requires confirmation, removes the thread directory, and clears active", () => {
+    const cwd = makeTempDir("chitking-delete-");
+    vi.spyOn(console, "log").mockImplementation(() => undefined);
+    chitkingInit(cwd);
+    chitkingNew("Contact Stability", {}, cwd);
+
+    expect(() => chitkingDelete("contact-stability", {}, cwd)).toThrow(
+      "chitking delete requires --yes",
+    );
+    expect(existsSync(path.join(cwd, "research", "contact-stability"))).toBe(true);
+
+    chitkingDelete("contact-stability", { yes: true }, cwd);
+
+    expect(existsSync(path.join(cwd, "research", "contact-stability"))).toBe(false);
+    expect(readText(path.join(cwd, ".chitking", "active.yaml"))).toContain(
+      "active_thread: null",
+    );
   });
 
   it("step advances maturity, requires reasons, and appends history", () => {
     const cwd = makeTempDir("chitking-step-");
     vi.spyOn(console, "log").mockImplementation(() => undefined);
     chitkingInit(cwd);
-    chitkingThreadNew("Contact Stability", {}, cwd);
+    chitkingNew("Contact Stability", {}, cwd);
 
     chitkingStep({}, cwd);
     let frontmatter = readFrontmatter(path.join(cwd, "research", "contact-stability", "thread.md"));
@@ -300,7 +394,7 @@ project_incomplete_markers:
     const cwd = makeTempDir("chitking-pack-");
     vi.spyOn(console, "log").mockImplementation(() => undefined);
     chitkingInit(cwd);
-    chitkingThreadNew("Contact Stability", {}, cwd);
+    chitkingNew("Contact Stability", {}, cwd);
 
     const packetPath = chitkingPack({ role: "build" }, cwd);
 
@@ -325,7 +419,7 @@ project_incomplete_markers:
     const cwd = makeTempDir("chitking-dreamer-pack-");
     vi.spyOn(console, "log").mockImplementation(() => undefined);
     chitkingInit(cwd);
-    chitkingThreadNew("Contact Stability", {}, cwd);
+    chitkingNew("Contact Stability", {}, cwd);
 
     const packetPath = chitkingPack({ role: "dreamer" }, cwd);
 
@@ -353,7 +447,7 @@ project_incomplete_markers:
     const cwd = makeTempDir("chitking-orient-");
     vi.spyOn(console, "log").mockImplementation(() => undefined);
     chitkingInit(cwd);
-    chitkingThreadNew("Contact Stability", {}, cwd);
+    chitkingNew("Contact Stability", {}, cwd);
     chitkingPack({ role: "build" }, cwd);
     chitkingStep({}, cwd);
 
@@ -372,8 +466,8 @@ project_incomplete_markers:
     const cwd = makeTempDir("chitking-git-");
     vi.spyOn(console, "log").mockImplementation(() => undefined);
     chitkingInit(cwd);
-    chitkingThreadNew("Contact Stability", {}, cwd);
-    chitkingThreadNew("Friction Model", {}, cwd);
+    chitkingNew("Contact Stability", {}, cwd);
+    chitkingNew("Friction Model", {}, cwd);
     execFileSync("git", ["init"], { cwd, stdio: "ignore" });
     execFileSync("git", ["config", "user.email", "test@example.com"], { cwd, stdio: "ignore" });
     execFileSync("git", ["config", "user.name", "Test User"], { cwd, stdio: "ignore" });
@@ -393,7 +487,7 @@ project_incomplete_markers:
     const cwd = makeTempDir("chitking-record-");
     vi.spyOn(console, "log").mockImplementation(() => undefined);
     chitkingInit(cwd);
-    chitkingThreadNew("Contact Stability", {}, cwd);
+    chitkingNew("Contact Stability", {}, cwd);
     execFileSync("git", ["init"], { cwd, stdio: "ignore" });
     execFileSync("git", ["config", "user.email", "test@example.com"], { cwd, stdio: "ignore" });
     execFileSync("git", ["config", "user.name", "Test User"], { cwd, stdio: "ignore" });
