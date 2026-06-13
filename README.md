@@ -7,7 +7,8 @@ Chitking now generates Chitking-native scaffold names:
 - primary binary: `chitking`
 - generated state directory: `.chitking`
 - generated research directory: `research/`
-- generated OpenCode names: `chitking-*`, `chitking-workflow`, and `inject-chitking-context.js`
+- generated OpenCode names: `chitking-*`, `ck-*`, `chitking-workflow`, and `inject-chitking-context.js`
+- generated Codex slash-command skills: `.codex/skills/ck-*/SKILL.md`
 
 Currently migrated:
 

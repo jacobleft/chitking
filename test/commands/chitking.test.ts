@@ -1,4 +1,11 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -26,6 +33,37 @@ import {
 } from "../../src/index.js";
 
 const tempDirs: string[] = [];
+const EXPECTED_CK_COMMANDS = [
+  "ck-init",
+  "ck-new",
+  "ck-list",
+  "ck-show",
+  "ck-focus",
+  "ck-rename",
+  "ck-archive",
+  "ck-restore",
+  "ck-delete",
+  "ck-orient",
+  "ck-step",
+  "ck-pack",
+  "ck-record",
+] as const;
+type ExpectedCkCommand = (typeof EXPECTED_CK_COMMANDS)[number];
+const CK_COMMAND_SNIPPETS: Record<ExpectedCkCommand, string> = {
+  "ck-init": "chitking init",
+  "ck-new": 'chitking new "<thread title>"',
+  "ck-list": "chitking list",
+  "ck-show": "chitking show",
+  "ck-focus": "chitking focus <thread-slug>",
+  "ck-rename": 'chitking rename <thread-slug> "<new title>"',
+  "ck-archive": "chitking archive <thread-slug> --yes",
+  "ck-restore": "chitking restore <thread-slug>",
+  "ck-delete": "chitking delete <thread-slug> --yes",
+  "ck-orient": "chitking orient",
+  "ck-step": "chitking step",
+  "ck-pack": "chitking pack --role <role>",
+  "ck-record": "chitking record --type <type> --text",
+};
 
 function makeTempDir(prefix: string): string {
   const tempDir = mkdtempSync(path.join(tmpdir(), prefix));
@@ -109,12 +147,43 @@ describe("chitking command skeleton", () => {
     expect(existsSync(path.join(cwd, "research", "project.md"))).toBe(true);
     expect(existsSync(path.join(cwd, ".chitking", "roles", "plan.md"))).toBe(true);
     expect(existsSync(path.join(cwd, ".opencode", "agents", "chitking-plan.md"))).toBe(true);
+    expect(readdirSync(path.join(cwd, ".opencode", "commands")).sort()).toEqual(
+      EXPECTED_CK_COMMANDS.map((command) => `${command}.md`).sort(),
+    );
     expect(
       existsSync(path.join(cwd, ".opencode", "skills", "chitking-workflow", "SKILL.md")),
     ).toBe(true);
+    expect(readdirSync(path.join(cwd, ".codex", "skills")).sort()).toEqual(
+      [...EXPECTED_CK_COMMANDS].sort(),
+    );
+    expect(existsSync(path.join(cwd, ".codex", "config.toml"))).toBe(true);
     expect(
       existsSync(path.join(cwd, ".opencode", "plugins", "inject-chitking-context.js")),
     ).toBe(true);
+    for (const command of EXPECTED_CK_COMMANDS) {
+      const openCodeCommand = readFileSync(
+        path.join(cwd, ".opencode", "commands", `${command}.md`),
+        "utf-8",
+      );
+      const codexCommand = readFileSync(
+        path.join(cwd, ".codex", "skills", command, "SKILL.md"),
+        "utf-8",
+      );
+      expect(openCodeCommand).toContain("description:");
+      expect(openCodeCommand).toContain(CK_COMMAND_SNIPPETS[command]);
+      expect(openCodeCommand).toContain("$ARGUMENTS");
+      expect(openCodeCommand).toContain("## Boundaries");
+      expect(codexCommand).toContain(`name: ${command}`);
+      expect(codexCommand).toContain(CK_COMMAND_SNIPPETS[command]);
+      expect(codexCommand).toContain("$ARGUMENTS");
+      expect(codexCommand).toContain("## Boundaries");
+    }
+    expect(readFileSync(path.join(cwd, ".opencode", "commands", "ck-step.md"), "utf-8")).toContain(
+      "Humans own maturity/readiness",
+    );
+    expect(readFileSync(path.join(cwd, ".codex", "skills", "ck-delete", "SKILL.md"), "utf-8")).toContain(
+      "Do not add `--yes` unless the user clearly asked to delete",
+    );
     expect(readFileSync(path.join(cwd, ".gitignore"), "utf-8")).toContain(
       "research/*/context/*.yaml",
     );
@@ -127,10 +196,16 @@ describe("chitking command skeleton", () => {
     chitkingInit(cwd);
     const rolePath = path.join(cwd, ".chitking", "roles", "plan.md");
     const agentPath = path.join(cwd, ".opencode", "agents", "chitking-plan.md");
+    const openCodeCommandPath = path.join(cwd, ".opencode", "commands", "ck-new.md");
+    const codexConfigPath = path.join(cwd, ".codex", "config.toml");
+    const codexCommandPath = path.join(cwd, ".codex", "skills", "ck-new", "SKILL.md");
     const skillPath = path.join(cwd, ".opencode", "skills", "chitking-workflow", "SKILL.md");
     const pluginPath = path.join(cwd, ".opencode", "plugins", "inject-chitking-context.js");
     writeFileSync(rolePath, "custom role", "utf-8");
     writeFileSync(agentPath, "custom agent", "utf-8");
+    writeFileSync(openCodeCommandPath, "custom opencode command", "utf-8");
+    writeFileSync(codexConfigPath, "custom codex config", "utf-8");
+    writeFileSync(codexCommandPath, "custom codex command", "utf-8");
     writeFileSync(skillPath, "custom skill", "utf-8");
     writeFileSync(pluginPath, "custom plugin", "utf-8");
 
@@ -138,6 +213,9 @@ describe("chitking command skeleton", () => {
 
     expect(readFileSync(rolePath, "utf-8")).toBe("custom role");
     expect(readFileSync(agentPath, "utf-8")).toBe("custom agent");
+    expect(readFileSync(openCodeCommandPath, "utf-8")).toBe("custom opencode command");
+    expect(readFileSync(codexConfigPath, "utf-8")).toBe("custom codex config");
+    expect(readFileSync(codexCommandPath, "utf-8")).toBe("custom codex command");
     expect(readFileSync(skillPath, "utf-8")).toBe("custom skill");
     expect(readFileSync(pluginPath, "utf-8")).toBe("custom plugin");
     expect(

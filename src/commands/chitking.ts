@@ -3,6 +3,7 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { parse, stringify } from "yaml";
 import {
+  getCodexTemplatePath,
   getOpenCodeTemplatePath,
   getChitkingRuntimeTemplatePath,
 } from "../templates/extract.js";
@@ -17,12 +18,58 @@ const CONTEXT_DIR = "context";
 const CONTEXT_IGNORE_PATTERN = "research/*/context/*.yaml";
 const ROLES_DIR = "roles";
 const SKILLS_DIR = "skills";
+const COMMANDS_DIR = "commands";
 const CHITKING_WORKFLOW_SKILL = "chitking-workflow";
+const CK_COMMANDS = [
+  "ck-init",
+  "ck-new",
+  "ck-list",
+  "ck-show",
+  "ck-focus",
+  "ck-rename",
+  "ck-archive",
+  "ck-restore",
+  "ck-delete",
+  "ck-orient",
+  "ck-step",
+  "ck-pack",
+  "ck-record",
+] as const;
+type CkCommand = (typeof CK_COMMANDS)[number];
+const CK_COMMAND_DESCRIPTIONS: Record<CkCommand, string> = {
+  "ck-init":
+    "Initialize Chitking scaffold and generated adapters without overwriting existing generated files.",
+  "ck-new":
+    "Create and focus a Chitking research thread from a title while preserving human-owned maturity/readiness boundaries.",
+  "ck-list": "List non-archived Chitking research threads.",
+  "ck-show":
+    "Show a Chitking research thread summary and source-of-truth paths.",
+  "ck-focus":
+    "Set the active Chitking research thread by slug and confirm source-of-truth paths.",
+  "ck-rename":
+    "Rename a Chitking research thread title while preserving the stable slug.",
+  "ck-archive":
+    "Archive a Chitking research thread only after explicit user confirmation.",
+  "ck-restore": "Restore an archived Chitking research thread.",
+  "ck-delete":
+    "Delete a Chitking research thread directory only after explicit user confirmation.",
+  "ck-orient":
+    "Print the human checkpoint for the active Chitking research thread.",
+  "ck-step":
+    "Move Chitking maturity/readiness only with explicit human consent.",
+  "ck-pack": "Generate a Chitking role prompt packet for the active thread.",
+  "ck-record":
+    "Append factual role output to the active Chitking research thread when asked.",
+};
 const OPENCODE_DIR = ".opencode";
 const OPENCODE_AGENTS_DIR = "agents";
+const OPENCODE_COMMANDS_DIR = "commands";
 const OPENCODE_SKILLS_DIR = "skills";
 const OPENCODE_PLUGINS_DIR = "plugins";
 const OPENCODE_CHITKING_CONTEXT_PLUGIN = "inject-chitking-context.js";
+const CODEX_DIR = ".codex";
+const CODEX_SKILLS_DIR = "skills";
+const CODEX_CONFIG_TEMPLATE = "config.toml";
 const CHITKING_CONFIG_TEMPLATE = "config.yaml";
 
 export interface ChitkingStatus {
@@ -226,6 +273,10 @@ function getOpenCodeAgentsDir(cwd: string): string {
   return path.join(cwd, OPENCODE_DIR, OPENCODE_AGENTS_DIR);
 }
 
+function getOpenCodeCommandsDir(cwd: string): string {
+  return path.join(cwd, OPENCODE_DIR, OPENCODE_COMMANDS_DIR);
+}
+
 function getOpenCodeSkillsDir(cwd: string): string {
   return path.join(cwd, OPENCODE_DIR, OPENCODE_SKILLS_DIR);
 }
@@ -248,6 +299,26 @@ function getOpenCodeChitkingWorkflowSkillPath(cwd: string): string {
 
 function getOpenCodeAdapterPath(cwd: string, role: string): string {
   return path.join(getOpenCodeAgentsDir(cwd), `chitking-${role}.md`);
+}
+
+function getOpenCodeCommandPath(cwd: string, command: CkCommand): string {
+  return path.join(getOpenCodeCommandsDir(cwd), `${command}.md`);
+}
+
+function getCodexSkillsDir(cwd: string): string {
+  return path.join(cwd, CODEX_DIR, CODEX_SKILLS_DIR);
+}
+
+function getCodexConfigPath(cwd: string): string {
+  return path.join(cwd, CODEX_DIR, CODEX_CONFIG_TEMPLATE);
+}
+
+function getCodexCommandSkillDir(cwd: string, command: CkCommand): string {
+  return path.join(getCodexSkillsDir(cwd), command);
+}
+
+function getCodexCommandSkillPath(cwd: string, command: CkCommand): string {
+  return path.join(getCodexCommandSkillDir(cwd, command), "SKILL.md");
 }
 
 function getThreadDir(cwd: string, slug: string): string {
@@ -294,6 +365,34 @@ function getChitkingRuntimeTemplateFilePath(...segments: string[]): string {
 
 function defaultConfigTemplateContent(): string {
   return fs.readFileSync(getChitkingRuntimeTemplateFilePath(CHITKING_CONFIG_TEMPLATE), "utf-8");
+}
+
+function commandTemplateContent(command: CkCommand): string {
+  return fs.readFileSync(
+    getChitkingRuntimeTemplateFilePath(COMMANDS_DIR, `${command}.md`),
+    "utf-8",
+  );
+}
+
+function openCodeCommandContent(command: CkCommand, commandContent: string): string {
+  return `---
+description: ${CK_COMMAND_DESCRIPTIONS[command]}
+---
+
+${commandContent}`;
+}
+
+function codexCommandSkillContent(command: CkCommand, commandContent: string): string {
+  return `---
+name: ${command}
+description: ${CK_COMMAND_DESCRIPTIONS[command]}
+---
+
+${commandContent}`;
+}
+
+function codexConfigTemplateContent(): string {
+  return fs.readFileSync(getCodexTemplatePath(CODEX_CONFIG_TEMPLATE), "utf-8");
 }
 
 function normalizeConfig(
@@ -447,6 +546,25 @@ function ensureOpenCodeChitkingContextPlugin(cwd: string): void {
     getOpenCodeChitkingContextPluginPath(cwd),
     fs.readFileSync(templatePath, "utf-8"),
   );
+}
+
+function ensureSlashCommands(cwd: string): void {
+  ensureDir(path.join(cwd, CODEX_DIR));
+  writeFileIfMissing(getCodexConfigPath(cwd), codexConfigTemplateContent());
+  ensureDir(getOpenCodeCommandsDir(cwd));
+  ensureDir(getCodexSkillsDir(cwd));
+  for (const command of CK_COMMANDS) {
+    const commandContent = commandTemplateContent(command);
+    writeFileIfMissing(
+      getOpenCodeCommandPath(cwd, command),
+      openCodeCommandContent(command, commandContent),
+    );
+    ensureDir(getCodexCommandSkillDir(cwd, command));
+    writeFileIfMissing(
+      getCodexCommandSkillPath(cwd, command),
+      codexCommandSkillContent(command, commandContent),
+    );
+  }
 }
 
 function ensureChitkingWorkflowSkill(cwd: string): void {
@@ -901,6 +1019,7 @@ export function chitkingInit(cwd: string = process.cwd()): void {
   writeFileIfMissing(getConfigPath(cwd), defaultConfigTemplateContent());
   ensureRoleHarness(cwd, loadConfig(cwd));
   ensureChitkingWorkflowSkill(cwd);
+  ensureSlashCommands(cwd);
   ensureOpenCodeChitkingContextPlugin(cwd);
   writeFileIfMissing(
     getActivePath(cwd),

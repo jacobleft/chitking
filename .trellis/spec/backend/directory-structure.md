@@ -30,8 +30,9 @@ src/
 ├── index.ts                 # public exports
 └── templates/
     ├── extract.ts           # runtime template path helpers
-    ├── chitking/            # Chitking scaffold templates
-    └── opencode/            # optional platform adapter templates
+    ├── chitking/            # Chitking scaffold templates and shared command bodies
+    ├── codex/               # optional Codex adapter templates
+    └── opencode/            # optional OpenCode adapter templates
 
 test/
 ├── commands/                # command behavior tests
@@ -39,7 +40,6 @@ test/
 └── templates/               # template helper/copy tests
 
 demo/                        # committed Chitking example workspace and fixture
-├── .opencode/               # generated adapter/tooling surface
 └── research/                # user-owned research content
 
 .github/workflows/
@@ -56,7 +56,7 @@ demo/                        # committed Chitking example workspace and fixture
 - Keep path-building helpers near the state they address. Example: `getThreadPath()`, `getContextPath()`, and `getOpenCodeAdapterPath()` live with the command implementation that uses them.
 - Keep template resolution in `src/templates/extract.ts`; command code imports `getChitkingRuntimeTemplatePath()` and `getOpenCodeTemplatePath()` rather than hard-coding `dist` paths.
 - Add tests beside the area being changed: command behavior in `test/commands/chitking.test.ts`, template resolution in `test/templates/extract.test.ts`.
-- Keep the committed demo workspace at top-level `demo/`. It is both a human-readable example and a regression fixture; tests for it live in `test/demo/`. Do not commit `demo/.chitking/`; local runtime product state may be generated there during experimentation but is ignored.
+- Keep the committed demo workspace at top-level `demo/`. It is both a human-readable example and a regression fixture; tests for it live in `test/demo/`. Do not commit `demo/.chitking/`, `demo/.opencode/`, or `demo/.codex/`; local runtime product state and generated adapter surfaces may be generated there during experimentation but are ignored.
 - Keep CI workflow files under `.github/workflows/`; the default quality workflow is `.github/workflows/ci.yml`.
 
 ---
@@ -66,7 +66,7 @@ demo/                        # committed Chitking example workspace and fixture
 - Runtime source files use lowercase names matching the product or concern: `chitking.ts`, `extract.ts`, `constants.ts`.
 - Exported command functions use the `chitking*` prefix: `chitkingInit`, `chitkingNew`, `chitkingPack`, `chitkingRecord`.
 - Runtime state constants use uppercase `const` names near the top of `src/commands/chitking.ts`, such as `CHITKING_DIR`, `RESEARCH_DIR`, `ACTIVE_FILE`, and `THREAD_FILE`.
-- Generated product artifacts use Chitking-native names: `.chitking/`, `research/`, `chitking-*`, and `inject-chitking-context.js`.
+- Generated product artifacts use Chitking-native names: `.chitking/`, `research/`, `chitking-*`, `ck-*`, and `inject-chitking-context.js`.
 - Slugs are lowercase letters/numbers/hyphens only. Existing enforcement: `validateSlug()` compares the provided slug to `slugifyTitle(slug)` and rejects mismatches.
 
 ---

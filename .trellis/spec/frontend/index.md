@@ -6,7 +6,7 @@
 
 ## Overview
 
-Chitking does not currently have a browser frontend, React app, component tree, hooks, CSS, or client-side state library. The user-facing surface is the CLI built with Commander in `src/cli/chitking.ts`, plus generated tool adapters under `.opencode/` when users run `chitking init`.
+Chitking does not currently have a browser frontend, React app, component tree, hooks, CSS, or client-side state library. The user-facing surface is the CLI built with Commander in `src/cli/chitking.ts`, plus generated tool adapters under `.opencode/` and `.codex/` when users run `chitking init`.
 
 Treat these frontend guidelines as "do not invent a web UI" guidance until a real frontend package exists. If a task adds a browser UI, update this spec with the actual code patterns introduced by that task.
 

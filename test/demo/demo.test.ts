@@ -6,6 +6,7 @@ import {
   rmSync,
   statSync,
 } from "node:fs";
+import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { tmpdir } from "node:os";
 import { describe, expect, it, vi } from "vitest";
@@ -14,6 +15,21 @@ import { chitkingInit } from "../../src/index.js";
 
 const DEMO_ROOT = path.resolve("demo");
 const REPO_GITIGNORE = path.resolve(".gitignore");
+const EXPECTED_CK_COMMANDS = [
+  "ck-init",
+  "ck-new",
+  "ck-list",
+  "ck-show",
+  "ck-focus",
+  "ck-rename",
+  "ck-archive",
+  "ck-restore",
+  "ck-delete",
+  "ck-orient",
+  "ck-step",
+  "ck-pack",
+  "ck-record",
+] as const;
 
 function demoPath(...segments: string[]): string {
   return path.join(DEMO_ROOT, ...segments);
@@ -25,6 +41,9 @@ function readDemoText(...segments: string[]): string {
 
 function listFiles(dirPath: string): string[] {
   return readdirSync(dirPath).flatMap((entry) => {
+    if ([".chitking", ".opencode", ".codex"].includes(entry)) {
+      return [];
+    }
     const filePath = path.join(dirPath, entry);
     if (statSync(filePath).isDirectory()) {
       return listFiles(filePath);
@@ -39,16 +58,35 @@ function listRelativeFiles(dirPath: string): string[] {
     .sort();
 }
 
+function trackedExistingIgnoredDemoFiles(): string[] {
+  const output = execFileSync(
+    "git",
+    ["ls-files", "demo/.chitking", "demo/.opencode", "demo/.codex"],
+    { encoding: "utf-8" },
+  );
+  return output
+    .split(/\r?\n/)
+    .filter((filePath) => filePath.length > 0 && existsSync(filePath))
+    .sort();
+}
+
 function generatedAdapterPaths(root: string): string[] {
   return [
     ...listRelativeFiles(path.join(root, ".opencode", "agents")).map(
       (filePath) => path.join(".opencode", "agents", filePath),
+    ),
+    ...listRelativeFiles(path.join(root, ".opencode", "commands")).map(
+      (filePath) => path.join(".opencode", "commands", filePath),
     ),
     ...listRelativeFiles(path.join(root, ".opencode", "skills")).map(
       (filePath) => path.join(".opencode", "skills", filePath),
     ),
     ...listRelativeFiles(path.join(root, ".opencode", "plugins")).map(
       (filePath) => path.join(".opencode", "plugins", filePath),
+    ),
+    path.join(".codex", "config.toml"),
+    ...listRelativeFiles(path.join(root, ".codex", "skills")).map(
+      (filePath) => path.join(".codex", "skills", filePath),
     ),
   ].sort();
 }
@@ -74,64 +112,89 @@ describe("demo Chitking workspace", () => {
       "context",
       "README.md",
     );
-    const adapterReadme = readDemoText(".opencode", "README.md");
 
-    expect(existsSync(demoPath(".chitking"))).toBe(false);
     expect(existsSync(demoPath("research", "project.md"))).toBe(true);
-    expect(existsSync(demoPath(".opencode"))).toBe(true);
     expect(existsSync(demoPath(".trellis"))).toBe(false);
+    expect(trackedExistingIgnoredDemoFiles()).toEqual([]);
     expect(readme).toContain("does not commit `.chitking/`");
     expect(readme).toContain("`research/` is user-owned research content");
-    expect(readme).toContain("`.opencode/` is generated tool adapter context");
+    expect(readme).toContain("does not commit generated `.opencode/` or `.codex/`");
     expect(contextReadme).toContain("not durable product truth");
-    expect(adapterReadme).toContain("not the durable research truth");
     expect(readDemoText(".gitignore")).toContain("research/*/context/*.yaml");
-    expect(readFileSync(REPO_GITIGNORE, "utf-8")).toContain("demo/.chitking/");
+    expect(readDemoText(".gitignore")).toContain(".opencode/");
+    expect(readDemoText(".gitignore")).toContain(".codex/");
+    const repoGitignore = readFileSync(REPO_GITIGNORE, "utf-8");
+    expect(repoGitignore).toContain("demo/.chitking/");
+    expect(repoGitignore).toContain("demo/.opencode/");
+    expect(repoGitignore).toContain("demo/.codex/");
   });
 
-  it("keeps the committed generated adapter surface aligned", () => {
-    const roles = adapterRoleNames(DEMO_ROOT);
-    expect(roles).toEqual([
-      "build",
-      "dreamer",
-      "oracle",
-      "plan",
-      "review",
-      "synthesize",
-      "verify",
-    ]);
-
-    for (const role of roles) {
-      expect(
-        existsSync(demoPath(".opencode", "agents", `chitking-${role}.md`)),
-      ).toBe(true);
-    }
-
-    expect(
-      existsSync(
-        demoPath(".opencode", "skills", "chitking-workflow", "SKILL.md"),
-      ),
-    ).toBe(true);
-    expect(
-      existsSync(
-        demoPath(".opencode", "plugins", "inject-chitking-context.js"),
-      ),
-    ).toBe(true);
-  });
-
-  it("matches current generated files for committed adapter surfaces", () => {
-    const tempDir = mkdtempSync(path.join(tmpdir(), "chitking-demo-"));
+  it("generates current adapter surfaces in a temp workspace", () => {
+    const tempDir = mkdtempSync(path.join(tmpdir(), "chitking-demo-adapters-"));
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
 
     try {
       chitkingInit(tempDir);
 
-      const generatedPaths = generatedAdapterPaths(tempDir);
-      expect(generatedAdapterPaths(DEMO_ROOT)).toEqual(generatedPaths);
+      const roles = adapterRoleNames(tempDir);
+      expect(roles).toEqual([
+        "build",
+        "dreamer",
+        "oracle",
+        "plan",
+        "review",
+        "synthesize",
+        "verify",
+      ]);
 
-      for (const relativePath of generatedPaths) {
-        expect(readFileSync(demoPath(relativePath), "utf-8")).toBe(
-          readFileSync(path.join(tempDir, relativePath), "utf-8"),
+      for (const role of roles) {
+        expect(
+          existsSync(
+            path.join(tempDir, ".opencode", "agents", `chitking-${role}.md`),
+          ),
+        ).toBe(true);
+      }
+
+      expect(
+        existsSync(
+          path.join(
+            tempDir,
+            ".opencode",
+            "skills",
+            "chitking-workflow",
+            "SKILL.md",
+          ),
+        ),
+      ).toBe(true);
+      expect(
+        existsSync(
+          path.join(tempDir, ".opencode", "plugins", "inject-chitking-context.js"),
+        ),
+      ).toBe(true);
+      for (const command of EXPECTED_CK_COMMANDS) {
+        expect(
+          existsSync(path.join(tempDir, ".opencode", "commands", `${command}.md`)),
+        ).toBe(true);
+      }
+      expect(existsSync(path.join(tempDir, ".codex", "config.toml"))).toBe(
+        true,
+      );
+      for (const command of EXPECTED_CK_COMMANDS) {
+        expect(
+          existsSync(
+            path.join(tempDir, ".codex", "skills", command, "SKILL.md"),
+          ),
+        ).toBe(true);
+      }
+
+      const generatedPaths = generatedAdapterPaths(tempDir);
+      expect(generatedPaths).toContain(path.join(".codex", "config.toml"));
+      for (const command of EXPECTED_CK_COMMANDS) {
+        expect(generatedPaths).toContain(
+          path.join(".opencode", "commands", `${command}.md`),
+        );
+        expect(generatedPaths).toContain(
+          path.join(".codex", "skills", command, "SKILL.md"),
         );
       }
     } finally {
@@ -147,7 +210,7 @@ describe("demo Chitking workspace", () => {
       .map((filePath) => readFileSync(filePath, "utf-8"))
       .join("\n");
 
-    expect(existsSync(demoPath(".chitking"))).toBe(false);
+    expect(trackedExistingIgnoredDemoFiles()).toEqual([]);
     expect(thread).toContain("thread: contact-stability");
     expect(thread).toContain("readiness_source: human");
     expect(project).toContain("Readiness is human-owned");

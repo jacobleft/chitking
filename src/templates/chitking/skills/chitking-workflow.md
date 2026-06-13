@@ -20,6 +20,7 @@ Humans own research direction, maturity, and readiness checkpoints. Agents may i
 
 - `research/<thread>/context/*.yaml` files are generated role packets/cache from `chitking pack --role <role>`. They point back to source files and can become stale when `thread.md` changes.
 - `.opencode/agents/chitking-*.md` files are OpenCode role adapters. They embed the matching canonical role contract directly and set platform permissions for each role.
+- `.opencode/commands/ck-*.md` and `.codex/skills/ck-*/SKILL.md` are generated slash-command wrappers around the Chitking CLI command surface.
 - Platform adapters are conveniences, not source of truth. If an adapter conflicts with `.chitking/roles/*.md`, treat the canonical role contract and Chitking config as authoritative and ask for human direction before changing durable files.
 
 ## Command Boundaries

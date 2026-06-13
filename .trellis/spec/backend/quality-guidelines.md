@@ -32,7 +32,7 @@ Package scripts in `package.json` are the authoritative checks:
 - Keep source-of-truth mutations in command functions, not in generated adapters or hook templates.
 - Preserve user edits when re-running `chitking init`; use `writeFileIfMissing()` for generated files.
 - Keep template copying covered by build/test behavior when adding files under `src/templates/`.
-- Keep the committed `demo/` workspace aligned with intentionally committed generated adapter files when changing `chitking init`, adapter templates, or demo `.gitignore` behavior. Do not require or commit `demo/.chitking/` runtime product state.
+- Keep the committed `demo/` workspace focused on user-owned source content. Do not require or commit `demo/.chitking/` runtime product state or generated `demo/.opencode/` / `demo/.codex/` adapter surfaces.
 
 ---
 
@@ -78,13 +78,13 @@ afterEach(() => {
 });
 ```
 
-Demo regression tests should compare the committed generated adapter surface against a fresh `chitkingInit(tempDir)` when possible, while excluding runtime product state such as `.chitking/`:
+Demo regression tests should generate adapter surfaces in a temporary workspace with `chitkingInit(tempDir)` rather than requiring generated adapter files under committed `demo/`:
 
 ```ts
 const tempDir = mkdtempSync(path.join(tmpdir(), "chitking-demo-"));
 try {
   chitkingInit(tempDir);
-  expect(generatedAdapterPaths(DEMO_ROOT)).toEqual(generatedAdapterPaths(tempDir));
+  expect(generatedAdapterPaths(tempDir)).toContain(".opencode/commands/ck-orient.md");
 } finally {
   rmSync(tempDir, { recursive: true, force: true });
 }
@@ -111,7 +111,7 @@ try {
 
 - `demo/.chitking/` is runtime Chitking product state and must not be committed in the demo fixture.
 - `demo/research/` is user-owned research content.
-- `demo/.opencode/` is generated adapter/tooling context, not durable research truth.
+- `demo/.opencode/` and `demo/.codex/` are generated adapter/tooling context, not durable research truth, and must not be committed.
 - `demo/research/*/context/` is generated/cache context and must not be treated as source of truth.
 - `demo/` must not contain `.trellis/` runtime state.
 - CI separates three Node/runtime contracts:
@@ -121,10 +121,10 @@ try {
 
 ### 4. Validation & Error Matrix
 
-- Demo missing `research/` or `.opencode/` -> failing demo boundary test.
-- Demo includes `.chitking/` -> failing demo boundary test.
+- Demo missing `research/` -> failing demo boundary test.
+- Demo includes `.chitking/`, `.opencode/`, or `.codex/` -> failing demo boundary test.
 - Demo includes `.trellis/` -> failing demo boundary test.
-- Demo generated adapter surface drifts from fresh `chitking init` -> failing scaffold parity test.
+- Fresh `chitking init` stops generating expected OpenCode/Codex adapter surfaces -> failing scaffold generation test.
 - Demo text reintroduces historical bridge labels or derivative framing -> failing legacy-framing test.
 - CI references a package script that does not pass locally -> CI workflow must not include that script yet; document the omission in the PRD.
 - CI pins pnpm 11 while using Node 20 or lower for shell steps -> setup/install failure; use Node 22+ for the project runtime.
@@ -132,9 +132,9 @@ try {
 
 ### 5. Good/Base/Bad Cases
 
-- Good: update template, run `chitking init` into a temp directory, compare committed generated adapter files against `demo/`, and update demo intentionally.
+- Good: update template, run `chitking init` into a temp directory, assert generated OpenCode/Codex adapter files there, and keep committed `demo/` limited to source content.
 - Base: add user-owned research example content under `demo/research/` while keeping generated/cache folders labeled as non-authoritative.
-- Bad: add generated context packets as durable assertions, commit `demo/.chitking/`, add `.trellis/` under `demo/`, or include `format:check` in CI while it fails on current tracked files.
+- Bad: add generated context packets as durable assertions, commit `demo/.chitking/`, commit `demo/.opencode/` or `demo/.codex/`, add `.trellis/` under `demo/`, or include `format:check` in CI while it fails on current tracked files.
 - Bad: change only `node-version` to `24.x` and assume GitHub Action internals no longer run on Node 20; action runtime and project runtime are separate.
 
 ### 6. Tests Required
@@ -142,8 +142,8 @@ try {
 - Assert top-level demo boundary files/directories exist.
 - Assert demo wording distinguishes product state, user research, generated adapters, and cache/context.
 - Assert the demo omits committed `.chitking/` runtime product state.
-- Assert OpenCode adapters exist for each configured generated role surface.
-- Assert generated adapter files match a fresh `chitkingInit(tempDir)` where feasible.
+- Assert `demo/.opencode/` and `demo/.codex/` are not committed.
+- Assert a fresh `chitkingInit(tempDir)` emits OpenCode/Codex adapters for each configured role or slash-command surface.
 - Assert human-owned readiness/maturity wording remains present.
 - Assert historical bridge labels and legacy command names are absent.
 - For CI runtime changes, run local project checks and push to GitHub to verify the workflow actually executes.
@@ -203,11 +203,11 @@ Document any intentionally omitted check in the task PRD until the repo is ready
 
 - [ ] Product wording remains Chitking-native and respects the product doctrine.
 - [ ] `.chitking/`, `.trellis/`, and `research/` boundaries remain clear.
-- [ ] Generated packets/adapters remain cache/context, not product truth.
+- [ ] Generated packets/adapters and slash-command wrappers remain cache/context, not product truth.
 - [ ] Human-owned maturity/readiness transitions require explicit command/user intent.
 - [ ] New helpers do not duplicate existing path, YAML, slug, config, or thread parsing helpers.
 - [ ] Tests cover success and failure cases for filesystem state changes.
-- [ ] Demo fixture changes update `test/demo/demo.test.ts` and preserve the absence of committed `demo/.chitking/`, plus `research/`, `.opencode/`, and cache/source-of-truth boundaries.
+- [ ] Demo fixture changes update `test/demo/demo.test.ts` and preserve the absence of committed `demo/.chitking/`, `demo/.opencode/`, and `demo/.codex/`, plus `research/` and cache/source-of-truth boundaries.
 - [ ] `pnpm build`, `pnpm test`, `pnpm lint`, and `pnpm typecheck` pass.
 
 ---

@@ -1,0 +1,3 @@
+# Project-scoped Codex config marker for Chitking slash commands.
+# Codex discovers repo skills from .codex/skills when this project config layer is active.
+# AGENTS.md is loaded by Codex separately; avoid unsupported project-local settings here.

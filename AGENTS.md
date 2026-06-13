@@ -51,9 +51,9 @@ Chitking remains a standalone product: do not add Trellis as a runtime/package d
 
 ## Generated and Demo Surfaces
 
-- Preserve Chitking-native names in code, docs, templates, and adapters: `chitking`, `.chitking`, `research/`, `chitking-*`, `chitking-workflow`, and `inject-chitking-context.js`.
-- `demo/` is a committed regression fixture. `demo/.chitking/` is intentionally ignored; committed user/source surfaces include `demo/research/` and generated adapter context under `demo/.opencode/`.
-- If scaffold templates or demo-facing generated files change, update the committed `demo/` fixture and `test/demo/` regression coverage together. `test/demo/demo.test.ts` checks OpenCode adapter parity and product-boundary wording.
+- Preserve Chitking-native names in code, docs, templates, and adapters: `chitking`, `.chitking`, `research/`, `ck-*`, `chitking-*`, `chitking-workflow`, and `inject-chitking-context.js`.
+- `demo/` is a committed regression fixture for user-owned source content. `demo/.chitking/`, `demo/.opencode/`, and `demo/.codex/` are intentionally ignored and regenerated only during tests or local experimentation.
+- If scaffold templates or demo-facing generated behavior changes, update `test/demo/` regression coverage and committed demo source content together. `test/demo/demo.test.ts` generates OpenCode/Codex adapter surfaces in a temp workspace.
 
 ## Trellis Workflow Constraints
 

@@ -5,3 +5,5 @@ coverage/
 *.log
 .opencode/package.json
 demo/.chitking/
+demo/.opencode/
+demo/.codex/

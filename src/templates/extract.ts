@@ -17,3 +17,7 @@ export function getChitkingRuntimeTemplatePath(...segments: string[]): string {
 export function getOpenCodeTemplatePath(...segments: string[]): string {
   return path.join(getTemplateRootPath(), "opencode", ...segments);
 }
+
+export function getCodexTemplatePath(...segments: string[]): string {
+  return path.join(getTemplateRootPath(), "codex", ...segments);
+}

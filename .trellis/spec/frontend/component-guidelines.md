@@ -19,7 +19,7 @@ No component structure exists yet. Current presentation structure is:
 - Commander command declarations in `src/cli/chitking.ts`.
 - Formatted text output in `src/commands/chitking.ts`.
 - Generated Markdown role contracts from `defaultRoleContractContent()` and `dreamerRoleContractContent()`.
-- Generated OpenCode adapters from `opencodeAdapterContent()`.
+- Generated OpenCode adapters from `opencodeAdapterContent()` and generated OpenCode/Codex slash-command Markdown.
 
 ---
 
