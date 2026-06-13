@@ -1,0 +1,4 @@
+{"file":".trellis/spec/backend/index.md","reason":"Check AGENTS.md claims against core CLI/package constraints and quality expectations."}
+{"file":".trellis/spec/frontend/index.md","reason":"Check user-facing CLI/generated adapter guidance and product naming constraints."}
+{"file":".trellis/tasks/06-13-update-agents-md/research/repo-instruction-sources.md","reason":"Verify updated AGENTS.md stays grounded in inspected sources."}
+{"file":".trellis/tasks/06-13-update-agents-md/research/slash-command-sources.md","reason":"Verify generated slash-command surfaces match inspected Chitking, Trellis, OpenCode, and Codex patterns."}

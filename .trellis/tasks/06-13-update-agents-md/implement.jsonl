@@ -1,0 +1,4 @@
+{"file":".trellis/spec/backend/index.md","reason":"Core CLI/package constraints and quality commands relevant to repo instruction guidance."}
+{"file":".trellis/spec/frontend/index.md","reason":"User-facing CLI and generated OpenCode adapter constraints relevant to AGENTS.md guidance."}
+{"file":".trellis/tasks/06-13-update-agents-md/research/repo-instruction-sources.md","reason":"Verified repo facts to use when updating AGENTS.md."}
+{"file":".trellis/tasks/06-13-update-agents-md/research/slash-command-sources.md","reason":"Inspected command patterns for Chitking-generated OpenCode and Codex slash-command surfaces."}
