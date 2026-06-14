@@ -4,6 +4,7 @@ coverage/
 .DS_Store
 *.log
 .opencode/package.json
+/opencode.json
 demo/.chitking/
 demo/.opencode/
 demo/.codex/
