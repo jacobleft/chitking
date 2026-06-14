@@ -104,3 +104,36 @@ Added a 'Local testing against the demo' subsection to README.md Development cov
 ### Next Steps
 
 - None - task complete
+
+
+## Session 4: Fix removed pnpm link --global in local-testing docs
+
+**Date**: 2026-06-14
+**Task**: Fix removed pnpm link --global in local-testing docs
+**Branch**: `main`
+
+### Summary
+
+Diagnosed that the local-testing guide recommended pnpm link --global, which was removed in pnpm v11; replaced with the correct pnpm add -g . command, added a PNPM_HOME/PATH prerequisite note, kept node bin/chitking.js as the no-install fallback, and fixed a dangling reference in the run-against-demo comment.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `54f9e25` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

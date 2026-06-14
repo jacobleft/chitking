@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 3
+- **Total Sessions**: 4
 - **Last Active**: 2026-06-14
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~106 | Active |
+| `journal-1.md` | ~139 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 4 | 2026-06-14 | Fix removed pnpm link --global in local-testing docs | `54f9e25` | `main` |
 | 3 | 2026-06-14 | Guide to local testing on the demo workspace | `65507c6` | `main` |
 | 2 | 2026-06-14 | Configure local OpenCode config | `df653e2` | `main` |
 | 1 | 2026-06-14 | Full Chitking slash commands | `e88c6ac`, `92ee863` | `main` |
