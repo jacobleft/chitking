@@ -52,12 +52,14 @@ pnpm build
 Make the local build runnable. Pick one:
 
 ```bash
-# Primary: put `chitking` on PATH (matches demo/README style)
-pnpm link --global
+# Primary: register the package's `chitking` bin globally (pnpm v11+; matches demo/README style)
+pnpm add -g .
 
 # No-install fallback: invoke the built binary directly from the repo root
 node bin/chitking.js --help
 ```
+
+`pnpm add -g .` requires pnpm's global bin directory on PATH (standalone installer, or run `pnpm setup` once). If pnpm was installed via Homebrew/npm without `PNPM_HOME`, use the `node bin/chitking.js` fallback.
 
 Run against the committed `demo/` workspace:
 
@@ -67,7 +69,7 @@ chitking init
 chitking focus contact-stability
 chitking orient
 chitking pack --role plan
-# Without `pnpm link --global`, use the direct invocation instead:
+# Without `pnpm add -g .`, use the direct invocation instead:
 #   node ../bin/chitking.js init
 ```
 
