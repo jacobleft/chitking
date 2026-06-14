@@ -45,9 +45,9 @@ src/
 
 ## Naming Conventions
 
-- CLI command names are lowercase verbs/nouns: `init`, `new`, `list`, `show`, `focus`, `rename`, `archive`, `restore`, `delete`, `orient`, `step`, `pack`, `record`.
+- CLI command names are lowercase verbs/nouns: `init`, `new`, `list`, `show`, `focus`, `rename`, `archive`, `restore`, `delete`, `orient`, `step`, `dispatch`, `record`.
 - Generated role adapter names use Chitking-native prefixes: `chitking-plan.md`, `chitking-build.md`, `chitking-workflow`.
-- User-invoked slash-command shortcuts use concise Chitking-native `ck-*` names mirroring the CLI subcommand surface: `ck-init`, `ck-new`, `ck-list`, `ck-show`, `ck-focus`, `ck-rename`, `ck-archive`, `ck-restore`, `ck-delete`, `ck-orient`, `ck-step`, `ck-pack`, and `ck-record`.
+- User-invoked slash-command shortcuts use concise Chitking-native `ck-*` names mirroring the CLI subcommand surface: `ck-init`, `ck-new`, `ck-list`, `ck-show`, `ck-focus`, `ck-rename`, `ck-archive`, `ck-restore`, `ck-delete`, `ck-orient`, `ck-step`, `ck-dispatch`, and `ck-record`.
 - Runtime command descriptions should use Chitking product terms: thread, maturity, readiness, role packet, source of truth.
 
 ---

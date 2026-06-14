@@ -32,7 +32,7 @@ const CK_COMMANDS = [
   "ck-delete",
   "ck-orient",
   "ck-step",
-  "ck-pack",
+  "ck-dispatch",
   "ck-record",
 ] as const;
 type CkCommand = (typeof CK_COMMANDS)[number];
@@ -57,7 +57,8 @@ const CK_COMMAND_DESCRIPTIONS: Record<CkCommand, string> = {
     "Print the human checkpoint for the active Chitking research thread.",
   "ck-step":
     "Move Chitking maturity/readiness only with explicit human consent.",
-  "ck-pack": "Generate a Chitking role prompt packet for the active thread.",
+  "ck-dispatch":
+    "Generate Chitking role prompt packets for the active thread.",
   "ck-record":
     "Append factual role output to the active Chitking research thread when asked.",
 };
@@ -116,6 +117,7 @@ export type RecordType = keyof typeof RECORD_SECTION_BY_TYPE;
 
 export interface NewThreadOptions {
   slug?: string;
+  noDispatch?: boolean;
 }
 
 export interface ConfirmationOptions {
@@ -126,10 +128,15 @@ export interface StepOptions {
   to?: string;
   readiness?: number;
   reason?: string;
+  noDispatch?: boolean;
 }
 
-export interface PackOptions {
-  role: string;
+export interface FocusOptions {
+  noDispatch?: boolean;
+}
+
+export interface DispatchOptions {
+  role?: string;
 }
 
 export interface RecordOptions {
@@ -461,7 +468,7 @@ function defaultRoleContractContent(
   ].filter((line): line is string => line !== null);
   const gateText = gates.length > 0 ? gates.join("\n") : "- No stage gate.";
 
-  return `# Chitking ${roleTitle(roleName)} Role\n\n## Objective\n\n${role.prompt.objective}\n\n## Scope and Gates\n\n${gateText}\n\n## Required Inputs\n\n- Read \`research/project.md\` before the active thread.\n- Read the active \`research/<thread>/thread.md\`.\n- Use the per-thread packet from \`chitking pack --role ${roleName}\` for current file references, maturity, readiness, warnings, and stop conditions.\n\n## Warnings\n\n${warnings}\n\n## Stop Conditions\n\n${stopConditions}\n\n## Universal Boundaries\n\n- Do not change maturity or readiness; humans own those checkpoints.\n- Do not treat generated packets as source of truth; project and thread Markdown files are canonical.\n- Record factual output with \`chitking record\` only when a human or calling workflow asks for it.\n`;
+  return `# Chitking ${roleTitle(roleName)} Role\n\n## Objective\n\n${role.prompt.objective}\n\n## Scope and Gates\n\n${gateText}\n\n## Required Inputs\n\n- Read \`research/project.md\` before the active thread.\n- Read the active \`research/<thread>/thread.md\`.\n- Use the per-thread packet from \`chitking dispatch --role ${roleName}\` for current file references, maturity, readiness, warnings, and stop conditions.\n\n## Warnings\n\n${warnings}\n\n## Stop Conditions\n\n${stopConditions}\n\n## Universal Boundaries\n\n- Do not change maturity or readiness; humans own those checkpoints.\n- Do not treat generated packets as source of truth; project and thread Markdown files are canonical.\n- Record factual output with \`chitking record\` only when a human or calling workflow asks for it.\n`;
 }
 
 function dreamerRoleContractContent(role: RoleDefinition): string {
@@ -470,7 +477,7 @@ function dreamerRoleContractContent(role: RoleDefinition): string {
     .map((condition) => `- ${condition}`)
     .join("\n");
 
-  return `# Chitking Dreamer Role\n\n## Objective\n\n${role.prompt.objective}\n\n## Required Inputs\n\n- Theory brief.\n- Open questions.\n- Constraints and non-goals.\n- Unresolved objections.\n- Failed paths.\n- The current per-thread packet from \`chitking pack --role dreamer\`.\n\n## Output Shape\n\nProduce bounded ideation candidates, not an implementation plan:\n\n- Hypotheses that may explain the current capability gap.\n- Strange analogies that could reveal hidden structure.\n- Candidate mechanisms worth investigating.\n- Edge cases and failure modes that stress the theory.\n- Possible theory directions that require review before adoption.\n\n## Hard Boundaries\n\n- Do not create implementation tasks.\n- Do not assign work to build, Executor, or any implementation role.\n- Do not hand Dreamer output directly to build or Executor.\n- Do not present ideation as approved next safe action.\n- Route candidates through human, oracle, or planner review before they can become implementation work.\n\n## Warnings\n\n${warnings}\n\n## Stop Conditions\n\n${stopConditions}\n`;
+  return `# Chitking Dreamer Role\n\n## Objective\n\n${role.prompt.objective}\n\n## Required Inputs\n\n- Theory brief.\n- Open questions.\n- Constraints and non-goals.\n- Unresolved objections.\n- Failed paths.\n- The current per-thread packet from \`chitking dispatch --role dreamer\`.\n\n## Output Shape\n\nProduce bounded ideation candidates, not an implementation plan:\n\n- Hypotheses that may explain the current capability gap.\n- Strange analogies that could reveal hidden structure.\n- Candidate mechanisms worth investigating.\n- Edge cases and failure modes that stress the theory.\n- Possible theory directions that require review before adoption.\n\n## Hard Boundaries\n\n- Do not create implementation tasks.\n- Do not assign work to build, Executor, or any implementation role.\n- Do not hand Dreamer output directly to build or Executor.\n- Do not present ideation as approved next safe action.\n- Route candidates through human, oracle, or planner review before they can become implementation work.\n\n## Warnings\n\n${warnings}\n\n## Stop Conditions\n\n${stopConditions}\n`;
 }
 
 function opencodePermissionsForRole(roleName: string): OpenCodePermissions {
@@ -517,7 +524,7 @@ function opencodeAdapterContent(
     roleName === "dreamer"
       ? "\nDreamer-specific boundary: OpenCode `edit: deny` blocks write/edit/patch tools. Do not create implementation tasks, call build/Executor directly, or present ideation as approved implementation work.\n"
       : "";
-  return `---\ndescription: |\n  Chitking ${roleTitle(roleName)} adapter with embedded canonical role contract.\nmode: subagent\npermission:\n  read: ${permission.read}\n  edit: ${permission.edit}\n  bash: ${permission.bash}\n  glob: ${permission.glob}\n  grep: ${permission.grep}\n  list: ${permission.list}\n  task: ${permission.task}\n---\n# Chitking ${roleTitle(roleName)} Adapter\n\nYou are the Chitking \`${roleName}\` role adapter for OpenCode.\n\nUse the active thread packet generated by:\n\n- \`chitking pack --role ${roleName}\`\n\nRole objective summary:\n\n${role.prompt.objective}\n${dreamerBoundary}\n## Embedded Canonical Role Contract\n\n${contractContent}`;
+  return `---\ndescription: |\n  Chitking ${roleTitle(roleName)} adapter with embedded canonical role contract.\nmode: subagent\npermission:\n  read: ${permission.read}\n  edit: ${permission.edit}\n  bash: ${permission.bash}\n  glob: ${permission.glob}\n  grep: ${permission.grep}\n  list: ${permission.list}\n  task: ${permission.task}\n---\n# Chitking ${roleTitle(roleName)} Adapter\n\nYou are the Chitking \`${roleName}\` role adapter for OpenCode.\n\nUse the active thread packet generated by:\n\n- \`chitking dispatch --role ${roleName}\`\n\nRole objective summary:\n\n${role.prompt.objective}\n${dreamerBoundary}\n## Embedded Canonical Role Contract\n\n${contractContent}`;
 }
 
 function chitkingWorkflowSkillContent(): string {
@@ -1011,13 +1018,17 @@ function validateReadiness(value: number): number {
   return value;
 }
 
-export function chitkingInit(cwd: string = process.cwd()): void {
+export function chitkingInit(
+  cwd: string = process.cwd(),
+  options: { noDispatch?: boolean } = {},
+): void {
   const chitkingDir = getChitkingDir(cwd);
   const researchDir = getResearchDir(cwd);
   ensureDir(chitkingDir);
   ensureDir(researchDir);
   writeFileIfMissing(getConfigPath(cwd), defaultConfigTemplateContent());
-  ensureRoleHarness(cwd, loadConfig(cwd));
+  const config = loadConfig(cwd);
+  ensureRoleHarness(cwd, config);
   ensureChitkingWorkflowSkill(cwd);
   ensureSlashCommands(cwd);
   ensureOpenCodeChitkingContextPlugin(cwd);
@@ -1040,6 +1051,12 @@ export function chitkingInit(cwd: string = process.cwd()): void {
       "utf-8",
     );
   }
+  if (!options.noDispatch) {
+    const activeThread = readActiveThreadOrNull(cwd);
+    if (activeThread) {
+      autoDispatch(cwd, activeThread, config);
+    }
+  }
   console.log("Chitking initialized.");
 }
 
@@ -1051,7 +1068,7 @@ export function chitkingNew(
   if (!fs.existsSync(getProjectPath(cwd))) {
     throw new Error("research/project.md is required. Run chitking init first.");
   }
-  loadConfig(cwd);
+  const config = loadConfig(cwd);
   const slug = options.slug ? validateSlug(options.slug) : slugifyTitle(title);
   const threadDir = getThreadDir(cwd, slug);
   const threadPath = getThreadPath(cwd, slug);
@@ -1075,6 +1092,9 @@ export function chitkingNew(
   writeThread(cwd, slug, thread);
   writeActiveState(cwd, slug);
   console.log(`Created and focused research thread: ${slug}`);
+  if (!options.noDispatch) {
+    autoDispatch(cwd, slug, config);
+  }
   return slug;
 }
 
@@ -1116,17 +1136,21 @@ export function chitkingShow(
 
 export function chitkingFocus(
   thread?: string,
+  options: FocusOptions = {},
   cwd: string = process.cwd(),
 ): string {
   if (!thread) {
     throw new Error("chitking focus requires <thread>. Use chitking show or chitking list.");
   }
-  loadConfig(cwd);
+  const config = loadConfig(cwd);
   const slug = validateSlug(thread);
   const parsedThread = readThread(cwd, slug);
   requireThreadNotArchived(slug, parsedThread);
   writeActiveState(cwd, slug);
   console.log(`Active thread: ${slug}`);
+  if (!options.noDispatch) {
+    autoDispatch(cwd, slug, config);
+  }
   return slug;
 }
 
@@ -1278,7 +1302,7 @@ export function chitkingOrient(cwd: string = process.cwd()): string {
   lines.push(
     "- Edit research/project.md or thread.md directly before agent fan-out.",
   );
-  lines.push("- Regenerate a role packet with: chitking pack --role <role>");
+  lines.push("- Refresh role packets with: chitking dispatch [--role <role>]");
   lines.push("", "Recovery options if stuck:");
   lines.push(
     '- Record a failed path with: chitking record --type failure --text "..."',
@@ -1351,23 +1375,23 @@ export function chitkingStep(
   );
   writeThread(cwd, slug, thread);
   console.log(`Updated ${slug}: ${previousMaturity} → ${targetMaturity}`);
+  if (!options.noDispatch) {
+    autoDispatch(cwd, slug, config);
+  }
 }
 
-export function chitkingPack(
-  options: PackOptions,
-  cwd: string = process.cwd(),
+function buildRolePacket(
+  cwd: string,
+  slug: string,
+  roleName: string,
+  role: RoleDefinition,
+  config: ResearchConfig,
 ): string {
-  const config = loadConfig(cwd);
-  const slug = resolveActiveThread(cwd);
-  const role = config.roles[options.role];
-  if (!role) {
-    throw new Error(`Unknown role: ${options.role}`);
-  }
   const thread = readThread(cwd, slug);
   ensureDir(getContextDir(cwd, slug));
-  const packetPath = getContextPath(cwd, slug, options.role);
+  const packetPath = getContextPath(cwd, slug, roleName);
   const packet = {
-    role: options.role,
+    role: roleName,
     thread: slug,
     project_file: toRepoPath(cwd, getProjectPath(cwd)),
     thread_file: toRepoPath(cwd, getThreadPath(cwd, slug)),
@@ -1386,9 +1410,71 @@ export function chitkingPack(
     },
   };
   writeYamlFile(packetPath, packet);
-  const repoPath = toRepoPath(cwd, packetPath);
-  console.log(repoPath);
-  return repoPath;
+  return toRepoPath(cwd, packetPath);
+}
+
+function autoDispatch(
+  cwd: string,
+  slug: string,
+  config: ResearchConfig,
+): void {
+  let successCount = 0;
+  const failures: string[] = [];
+  for (const [roleName, role] of Object.entries(config.roles)) {
+    try {
+      buildRolePacket(cwd, slug, roleName, role, config);
+      successCount++;
+    } catch (error) {
+      failures.push(
+        `${roleName}: ${error instanceof Error ? error.message : error}`,
+      );
+    }
+  }
+  if (failures.length > 0) {
+    console.log(
+      `Dispatched ${successCount} role packets for ${slug}; ${failures.length} failed.`,
+    );
+  } else {
+    console.log(`Dispatched ${successCount} role packets for ${slug}.`);
+  }
+}
+
+export function chitkingDispatch(
+  options: DispatchOptions = {},
+  cwd: string = process.cwd(),
+): string {
+  const config = loadConfig(cwd);
+  const slug = resolveActiveThread(cwd);
+
+  if (options.role) {
+    const role = config.roles[options.role];
+    if (!role) {
+      throw new Error(`Unknown role: ${options.role}`);
+    }
+    const repoPath = buildRolePacket(cwd, slug, options.role, role, config);
+    console.log(repoPath);
+    return repoPath;
+  }
+
+  const paths: string[] = [];
+  const failures: string[] = [];
+  for (const [roleName, role] of Object.entries(config.roles)) {
+    try {
+      const repoPath = buildRolePacket(cwd, slug, roleName, role, config);
+      paths.push(repoPath);
+      console.log(repoPath);
+    } catch (error) {
+      failures.push(
+        `${roleName}: ${error instanceof Error ? error.message : error}`,
+      );
+    }
+  }
+  if (failures.length > 0) {
+    console.error(
+      `Failed to dispatch ${failures.length} role(s):\n${failures.join("\n")}`,
+    );
+  }
+  return paths.join("\n");
 }
 
 export function chitkingRecord(

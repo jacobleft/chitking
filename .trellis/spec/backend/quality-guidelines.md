@@ -55,7 +55,8 @@ Package scripts in `package.json` are the authoritative checks:
 - Clean temp directories in `afterEach()`.
 - Spy on `console.log` for command tests that should not print during test runs.
 - Test generated files and user-edit preservation when changing `chitking init`.
-- Test generated context packet shape when changing `chitking pack`.
+- Test generated context packet shape when changing `chitking dispatch`.
+- Test all-roles dispatch (no `--role`), auto-dispatch after new/focus/step/init, `--no-dispatch` opt-out, and init skip-when-no-thread when changing dispatch behavior.
 - Test CLI help when adding commands or options.
 - Add or update `test/demo/demo.test.ts` when the committed top-level `demo/` fixture, default scaffold files, generated role contracts, generated adapters, or demo boundary wording changes.
 

@@ -36,7 +36,7 @@ The thread lacks a verified comparison between the score and observed post-distu
 ## Next Safe Actions
 
 - Draft the disturbance protocol.
-- Ask `chitking pack --role plan` for planning context after reviewing this source file.
+- Ask `chitking dispatch --role plan` for planning context after reviewing this source file.
 
 ## Decisions & Maturity History
 

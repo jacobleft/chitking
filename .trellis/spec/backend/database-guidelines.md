@@ -82,7 +82,7 @@ function writeFileIfMissing(filePath: string, content: string): void {
 
 ### Generated packet points back to source files
 
-`chitkingPack()` writes references instead of embedding full Markdown source:
+`chitkingDispatch()` writes references instead of embedding full Markdown source. When called without `--role`, it loops over all configured roles (best-effort: per-role failures are collected without aborting the rest):
 
 ```ts
 const packet = {

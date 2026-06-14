@@ -48,13 +48,23 @@ console.log(`Recorded ${options.type} for ${slug}.`);
 
 ### Path-producing command output
 
-`chitkingPack()` writes a generated context packet and prints the relative path:
+`chitkingDispatch()` writes a generated context packet and prints the relative path. With `--role <role>` it prints one path; without `--role` it prints each role's packet path on its own line (best-effort: per-role failures are reported without aborting):
 
 ```ts
 const repoPath = toRepoPath(cwd, packetPath);
 console.log(repoPath);
 return repoPath;
 ```
+
+### Auto-dispatch summary output
+
+When `new`, `focus`, `step`, or `init` (with an active thread) complete their primary work, they call `autoDispatch()` which prints a one-line summary — not individual paths:
+
+```ts
+console.log(`Dispatched ${roleCount} role packets for ${slug}.`);
+```
+
+Use `--no-dispatch` on `init`/`new`/`focus`/`step` to opt out of auto-dispatch entirely. `init` with no active thread skips dispatch silently.
 
 ### Error output
 
@@ -71,7 +81,8 @@ console.error(
 
 ## What to Log
 
-- State changes the user requested, such as init, focus, step, thread creation, record, and pack.
+- State changes the user requested, such as init, focus, step, thread creation, record, and dispatch.
+- Auto-dispatch summaries triggered by init/new/focus/step when an active thread exists.
 - Current state summaries from `chitking orient`, including maturity/readiness, blockers, stale packets, risky roles, and next safe actions.
 - Relative paths to generated artifacts when the command's purpose is to create a consumable artifact.
 

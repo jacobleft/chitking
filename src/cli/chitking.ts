@@ -5,12 +5,12 @@ import chalk from "chalk";
 import {
   chitkingArchive,
   chitkingDelete,
+  chitkingDispatch,
   chitkingFocus,
   chitkingInit,
   chitkingList,
   chitkingNew,
   chitkingOrient,
-  chitkingPack,
   chitkingRecord,
   chitkingRename,
   chitkingRestore,
@@ -49,14 +49,18 @@ export function createChitkingProgram(): Command {
     .description(
       "Initialize Chitking scaffold in the current repository",
     )
-    .action(() => runWithErrors(() => chitkingInit()));
+    .option("--no-dispatch", "Skip auto-dispatch of role packets")
+    .action((options: { noDispatch?: boolean }) =>
+      runWithErrors(() => chitkingInit(process.cwd(), options)),
+    );
 
   program
     .command("new")
     .description("Create and focus a new research thread")
     .argument("<title>", "Thread title")
     .option("--slug <slug>", "Override generated slug")
-    .action((title: string, options: { slug?: string }) =>
+    .option("--no-dispatch", "Skip auto-dispatch of role packets")
+    .action((title: string, options: { slug?: string; noDispatch?: boolean }) =>
       runWithErrors(() => chitkingNew(title, options)),
     );
 
@@ -75,8 +79,9 @@ export function createChitkingProgram(): Command {
     .command("focus")
     .description("Set the active research thread")
     .argument("<thread>", "Thread slug to focus")
-    .action((activeThread: string) =>
-      runWithErrors(() => chitkingFocus(activeThread)),
+    .option("--no-dispatch", "Skip auto-dispatch of role packets")
+    .action((activeThread: string, options: { noDispatch?: boolean }) =>
+      runWithErrors(() => chitkingFocus(activeThread, options)),
     );
 
   program
@@ -125,19 +130,20 @@ export function createChitkingProgram(): Command {
     .option("--to <maturity>", "Explicit target maturity")
     .option("--readiness <0-5>", "Set readiness score", parseReadiness)
     .option("--reason <text>", "Required reason for explicit --to moves")
-    .action((options: { to?: string; readiness?: number; reason?: string }) =>
+    .option("--no-dispatch", "Skip auto-dispatch of role packets")
+    .action((options: { to?: string; readiness?: number; reason?: string; noDispatch?: boolean }) =>
       runWithErrors(() => chitkingStep(options)),
     );
 
   program
-    .command("pack")
-    .description("Generate a role prompt packet for the active thread")
-    .requiredOption(
+    .command("dispatch")
+    .description("Generate role prompt packets for the active thread")
+    .option(
       "--role <role>",
-      "Role: plan, build, verify, synthesize, review, oracle",
+      "Dispatch a single role; omit to dispatch all roles (plan, dreamer, build, verify, synthesize, review, oracle)",
     )
-    .action((options: { role: string }) =>
-      runWithErrors(() => chitkingPack(options)),
+    .action((options: { role?: string }) =>
+      runWithErrors(() => chitkingDispatch(options)),
     );
 
   program

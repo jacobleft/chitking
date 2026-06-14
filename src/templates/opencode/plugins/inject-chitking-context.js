@@ -193,7 +193,7 @@ function buildRoleContext(directory, role) {
   const warningLines = state.warnings.length > 0 ? state.warnings.map(w => `- ${w}`).join("\n") : "- None detected."
   const packetLine = state.packetExists
     ? `Packet: ${state.packetPath}`
-    : `Packet: not generated; run chitking pack --role ${role} if a durable packet is needed.`
+    : `Packet: not generated; run chitking dispatch --role ${role} if a durable packet is needed.`
   const objective = state.roleConfig?.prompt?.objective ? `Objective: ${state.roleConfig.prompt.objective}\n` : ""
 
   return `${CHITKING_MARKER}\n<chitking-role-context>\nRole: ${role}\nActive thread: ${state.activeThread}\nMaturity: ${state.thread.maturity}\nReadiness: ${state.thread.readiness} (${state.thread.readiness_source || "unknown source"})\nProject file: ${state.projectPath}\nThread file: ${state.threadPath}\n${packetLine}\n${objective}\nRole gate warnings:\n${warningLines}\nSafety boundaries:\n- Humans own maturity/readiness; recommend changes, do not apply them.\n- Injector is read-only; it did not mutate thread.md, active.yaml, config.yaml, or packets.\n- Read research/project.md before research/<thread>/thread.md.\n- Treat generated packets as cache, not source of truth.\n- Dreamer must not create implementation tasks or hand work directly to build/Executor.\n</chitking-role-context>`
@@ -204,7 +204,7 @@ function buildMainBreadcrumb(directory) {
   if (state.missing) {
     return `<chitking-breadcrumb>\nChitking repo detected. ${state.missing}\nSafe next action: inspect research/project.md, then create/focus a thread.\n</chitking-breadcrumb>`
   }
-  return `<chitking-breadcrumb>\nActive Chitking thread: ${state.activeThread}\nMaturity: ${state.thread.maturity}\nReadiness: ${state.thread.readiness} (${state.thread.readiness_source || "unknown source"})\nSafe reminders: humans own maturity/readiness; read research/project.md before ${state.threadPath}; use chitking orient or chitking pack --role <role> before role fan-out.\n</chitking-breadcrumb>`
+  return `<chitking-breadcrumb>\nActive Chitking thread: ${state.activeThread}\nMaturity: ${state.thread.maturity}\nReadiness: ${state.thread.readiness} (${state.thread.readiness_source || "unknown source"})\nSafe reminders: humans own maturity/readiness; read research/project.md before ${state.threadPath}; use chitking orient or chitking dispatch [--role <role>] before role fan-out.\n</chitking-breadcrumb>`
 }
 
 function prependTextPart(output, text) {

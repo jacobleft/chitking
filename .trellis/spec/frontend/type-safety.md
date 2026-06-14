@@ -20,7 +20,7 @@ Current compiler baseline from `tsconfig.json`:
 
 ## Type Organization
 
-- Export interfaces/types only when tests or consumers need them: `ChitkingStatus`, `NewThreadOptions`, `StepOptions`, `PackOptions`, `RecordOptions`, `RecordType`.
+- Export interfaces/types only when tests or consumers need them: `ChitkingStatus`, `NewThreadOptions`, `StepOptions`, `DispatchOptions`, `FocusOptions`, `RecordOptions`, `RecordType`.
 - Keep internal types unexported near their use: `RoleDefinition`, `ResearchConfig`, `ThreadFrontmatter`, `ParsedThread`, `GitSnapshot`.
 - Use `as const` for fixed maps/lists that define derived unions.
 

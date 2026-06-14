@@ -46,7 +46,7 @@ Current user-facing tests live in `test/commands/chitking.test.ts`:
 - Help metadata test checks `Usage: chitking`, `Chitking (哲徑)`, and command names.
 - Init tests check generated `.chitking/`, `research/`, `.opencode/`, and `.codex/` files and preservation on repeated init.
 - Plugin tests import the generated OpenCode plugin template and verify context injection stays bounded.
-- Pack/orient/record tests verify generated output and warnings.
+- Dispatch/orient/record tests verify generated output and warnings.
 
 Example help test:
 
@@ -94,7 +94,7 @@ expect(help).toContain("record");
 
 - OpenCode command files: `.opencode/commands/<ck-name>.md`; the filename is the command name.
 - Codex command skills: `.codex/skills/<ck-name>/SKILL.md` with frontmatter `name: <ck-name>` and a concise `description`.
-- Current command names mirror the CLI subcommand surface: `ck-init`, `ck-new`, `ck-list`, `ck-show`, `ck-focus`, `ck-rename`, `ck-archive`, `ck-restore`, `ck-delete`, `ck-orient`, `ck-step`, `ck-pack`, and `ck-record`.
+- Current command names mirror the CLI subcommand surface: `ck-init`, `ck-new`, `ck-list`, `ck-show`, `ck-focus`, `ck-rename`, `ck-archive`, `ck-restore`, `ck-delete`, `ck-orient`, `ck-step`, `ck-dispatch`, and `ck-record`.
 
 ### 3. Contracts
 
@@ -135,5 +135,5 @@ Run a Trellis command and update workflow state directly.
 #### Correct
 
 ```md
-Run the matching explicit CLI command, such as `chitking new "<thread title>"`, `chitking focus <thread-slug>`, or `chitking pack --role <role>`, then report the Chitking command output.
+Run the matching explicit CLI command, such as `chitking new "<thread title>"`, `chitking focus <thread-slug>`, or `chitking dispatch [--role <role>]`, then report the Chitking command output.
 ```

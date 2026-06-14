@@ -18,7 +18,7 @@ Humans own research direction, maturity, and readiness checkpoints. Agents may i
 
 ## Generated Files and Platform Adapters
 
-- `research/<thread>/context/*.yaml` files are generated role packets/cache from `chitking pack --role <role>`. They point back to source files and can become stale when `thread.md` changes.
+- `research/<thread>/context/*.yaml` files are generated role packets/cache from `chitking dispatch [--role <role>]`. They point back to source files and can become stale when `thread.md` changes.
 - `.opencode/agents/chitking-*.md` files are OpenCode role adapters. They embed the matching canonical role contract directly and set platform permissions for each role.
 - `.opencode/commands/ck-*.md` and `.codex/skills/ck-*/SKILL.md` are generated slash-command wrappers around the Chitking CLI command surface.
 - Platform adapters are conveniences, not source of truth. If an adapter conflicts with `.chitking/roles/*.md`, treat the canonical role contract and Chitking config as authoritative and ask for human direction before changing durable files.
@@ -35,7 +35,7 @@ Humans own research direction, maturity, and readiness checkpoints. Agents may i
 - `chitking delete <thread> --yes` removes the thread's durable `research/<thread>/` directory. The explicit `--yes` is required; never delete a thread unless the user clearly requested deletion.
 - `chitking orient` reads the active thread, source files, config, generated packets, and Git activity to summarize maturity, readiness, blockers, stale packets, risky roles, and next safe actions. Use it to orient; do not treat it as permission to mutate files.
 - `chitking step` changes maturity/readiness and records the reason in `thread.md`. Because humans own maturity/readiness, only run or emulate this command when explicitly instructed by the user or calling workflow.
-- `chitking pack --role <role>` regenerates `research/<thread>/context/<role>.yaml` for a role. Packets are generated cache and should not replace reading `research/project.md` and `research/<thread>/thread.md`.
+- `chitking dispatch [--role <role>]` regenerates `research/<thread>/context/<role>.yaml` for a role (or all roles when `--role` is omitted). Packets are generated cache and should not replace reading `research/project.md` and `research/<thread>/thread.md`.
 - `chitking record --type <type> --text "..."` appends factual output to the active thread. Use it only when the user or calling workflow asks you to record evidence, failures, decisions, or revisions.
 
 ## Agent Operating Rules
@@ -43,6 +43,6 @@ Humans own research direction, maturity, and readiness checkpoints. Agents may i
 1. Start by identifying the active thread from `.chitking/active.yaml` when the user has not named a thread.
 2. Read `research/project.md` before `research/<thread>/thread.md`.
 3. Treat maturity/readiness as human checkpoints. Recommend changes when appropriate, but do not silently apply them.
-4. Treat generated context packets as cache. Regenerate them with `chitking pack` when stale rather than editing them by hand.
+4. Treat generated context packets as cache. Regenerate them with `chitking dispatch` when stale rather than editing them by hand.
 5. Respect role contracts and stop conditions before acting as a specialized Chitking role.
 6. Ask before changing source-of-truth files or thread lifecycle state unless the user explicitly requested that change.

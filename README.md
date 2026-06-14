@@ -23,7 +23,7 @@ Currently migrated:
 - `chitking delete <thread> --yes`
 - `chitking orient`
 - `chitking step [--to <maturity>] [--readiness <0-5>] [--reason <text>]`
-- `chitking pack --role <role>`
+- `chitking dispatch [--role <role>]`
 - `chitking record --type <type> --text <text> [--commit <ref>]`
 
 Remaining Chitking runtime commands: none from the legacy bridge scope.
@@ -68,7 +68,7 @@ cd demo
 chitking init
 chitking focus contact-stability
 chitking orient
-chitking pack --role plan
+chitking dispatch
 # Without `pnpm add -g .`, use the direct invocation instead:
 #   node ../bin/chitking.js init
 ```

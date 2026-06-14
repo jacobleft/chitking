@@ -22,7 +22,7 @@ const EXPECTED_CK_COMMANDS = [
   "ck-delete",
   "ck-orient",
   "ck-step",
-  "ck-pack",
+  "ck-dispatch",
   "ck-record",
 ] as const;
 

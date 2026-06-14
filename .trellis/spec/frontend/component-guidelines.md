@@ -34,8 +34,8 @@ export interface StepOptions {
   reason?: string;
 }
 
-export interface PackOptions {
-  role: string;
+export interface DispatchOptions {
+  role?: string;
 }
 ```
 
