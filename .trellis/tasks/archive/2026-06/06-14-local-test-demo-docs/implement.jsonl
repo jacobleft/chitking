@@ -1,0 +1,1 @@
+{"file": ".trellis/spec/guides/chitking-product-doctrine.md", "reason": "Docs must use Chitking-native names (chitking, .chitking, research/, ck-*) and respect product boundaries (no Trellis/rt legacy naming)"}
