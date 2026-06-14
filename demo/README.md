@@ -11,6 +11,8 @@ This folder is a committed example workspace for Chitking (哲徑). It is both a
 
 ## Try it locally
 
+To build and link the local CLI first, see [Local testing against the demo](../README.md#local-testing-against-the-demo) in the main README.
+
 From this directory:
 
 ```bash
