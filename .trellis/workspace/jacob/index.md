@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 5
+- **Total Sessions**: 6
 - **Last Active**: 2026-06-15
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~172 | Active |
+| `journal-1.md` | ~205 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 6 | 2026-06-15 | Auto-bump patch version on every feature | `c5df90f` | `main` |
 | 5 | 2026-06-15 | Rename pack to dispatch with all-roles and auto-dispatch | `60e6803` | `main` |
 | 4 | 2026-06-14 | Fix removed pnpm link --global in local-testing docs | `54f9e25` | `main` |
 | 3 | 2026-06-14 | Guide to local testing on the demo workspace | `65507c6` | `main` |

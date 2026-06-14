@@ -170,3 +170,36 @@ Renamed chitking pack -> dispatch (clean break, no alias). dispatch defaults to 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 6: Auto-bump patch version on every feature
+
+**Date**: 2026-06-15
+**Task**: Auto-bump patch version on every feature
+**Branch**: `main`
+
+### Summary
+
+Added scripts/bump-version.js that increments patch version in both package.json and src/constants.ts. version:bump npm script entry. AGENTS.md Phase 3.4 convention: feat: commits trigger bump, docs/chore/test/spec do not. 3 tests covering increment, formatting, zero-start edge case. Dogfooded: 0.0.0 -> 0.0.1 for this commit.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c5df90f` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
