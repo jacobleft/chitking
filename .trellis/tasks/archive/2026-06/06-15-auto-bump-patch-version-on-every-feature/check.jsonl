@@ -1,0 +1,3 @@
+{"file": "backend/index.md", "reason": "Quality check commands (build/test/lint/typecheck), CLI smoke test convention"}
+{"file": "backend/quality-guidelines.md", "reason": "Verify test coverage for the new script, lint/typecheck pass"}
+{"file": "guides/chitking-product-doctrine.md", "reason": "Verify no Trellis/rt product language in the bump script or AGENTS.md edit"}

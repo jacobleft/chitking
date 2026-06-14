@@ -1,0 +1,3 @@
+{"file": "backend/index.md", "reason": "Pre-dev checklist, CLI command core conventions, scripts/ pattern"}
+{"file": "backend/quality-guidelines.md", "reason": "Testing requirements for scripts, lint/typecheck standards"}
+{"file": "guides/chitking-product-doctrine.md", "reason": "Product boundaries — ensure version bump is Chitking-native, no Trellis naming"}
