@@ -49,6 +49,12 @@ Chitking remains a standalone product: do not add Trellis as a runtime/package d
 - ESLint targets TypeScript in `src/` and `test/`; `scripts/**`, `*.js`, `dist/**`, and `node_modules/**` are ignored, so JS helpers are not covered by `pnpm lint`.
 - For docs-only/root instruction edits, at minimum run `git diff --check`. For source, test, template, or CLI behavior changes, prefer `pnpm build && pnpm test && pnpm lint && pnpm typecheck`.
 
+## Version Bumps
+
+- Before committing `feat:` work (Phase 3.4), run `pnpm version:bump` to increment the patch version in both `package.json` and `src/constants.ts`.
+- Include the version change in the same feature commit.
+- Docs-only, chore, test, or spec changes do NOT trigger a version bump.
+
 ## Generated and Demo Surfaces
 
 - Preserve Chitking-native names in code, docs, templates, and adapters: `chitking`, `.chitking`, `research/`, `ck-*`, `chitking-*`, `chitking-workflow`, and `inject-chitking-context.js`.
