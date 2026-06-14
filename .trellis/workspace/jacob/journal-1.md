@@ -137,3 +137,36 @@ Diagnosed that the local-testing guide recommended pnpm link --global, which was
 ### Next Steps
 
 - None - task complete
+
+
+## Session 5: Rename pack to dispatch with all-roles and auto-dispatch
+
+**Date**: 2026-06-15
+**Task**: Rename pack to dispatch with all-roles and auto-dispatch
+**Branch**: `main`
+
+### Summary
+
+Renamed chitking pack -> dispatch (clean break, no alias). dispatch defaults to all 7 configured roles; --role is optional single-role escape hatch. Auto-dispatch fires after init (if active thread), new, focus, step with one-line summary output. --no-dispatch opt-out on all four commands. Best-effort per-role loop. Updated 13 changed files (src, cli, templates, docs, tests) + 9 spec docs. 34 tests green, build/lint/typecheck clean.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `60e6803` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
