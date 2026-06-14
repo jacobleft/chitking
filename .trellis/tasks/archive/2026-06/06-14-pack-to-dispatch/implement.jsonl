@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Pre-development checklist + entry point for backend coding guidelines; this task modifies src/commands/chitking.ts and src/cli/chitking.ts"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Best-effort all-roles dispatch needs per-role error handling that continues without aborting; follow the project's error-handling conventions"}
+{"file": ".trellis/spec/guides/chitking-product-doctrine.md", "reason": "Naming must stay Chitking-native (ck-dispatch, chitking, .chitking, research/); no Trellis/rt product language in command surface or templates"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Refactor extracts a shared dispatchAllRoles helper used by both explicit dispatch and auto-dispatch after init/new/focus/step; avoid duplicating the packet-generation logic"}

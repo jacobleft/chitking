@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend quality checklist for verifying the CLI/commands changes"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Verify code quality, test coverage, and conventions for the renamed command and auto-dispatch integration"}
+{"file": ".trellis/spec/guides/chitking-product-doctrine.md", "reason": "Verify Chitking-native naming (ck-dispatch) and no Trellis/rt language leaked into command surface, templates, or docs"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Change spans CLI layer (src/cli), commands layer (src/commands), templates, docs, and tests; verify cross-layer consistency of the pack→dispatch rename and auto-dispatch wiring"}
