@@ -71,3 +71,36 @@ Created git-ignored local opencode.json at repo root (GLM-5.2 primary, Kimi k2p7
 ### Next Steps
 
 - None - task complete
+
+
+## Session 3: Guide to local testing on the demo workspace
+
+**Date**: 2026-06-14
+**Task**: Guide to local testing on the demo workspace
+**Branch**: `main`
+
+### Summary
+
+Added a 'Local testing against the demo' subsection to README.md Development covering build, both run mechanisms (pnpm link --global + node bin/chitking.js), the init/focus/orient/pack sequence, observe/reset, and Node>=20 note; cross-linked demo/README.md to it.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `65507c6` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
