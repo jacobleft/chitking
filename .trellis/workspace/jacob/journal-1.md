@@ -436,3 +436,36 @@ Three changes: (1) Removed duplicate ck-step from CK_COMMANDS. (2) chitkingAsses
 ### Next Steps
 
 - None - task complete
+
+
+## Session 14: Redesign orient + show output: whole-picture, no clustering
+
+**Date**: 2026-06-15
+**Task**: Redesign orient + show output: whole-picture, no clustering
+**Branch**: `main`
+
+### Summary
+
+Redesigned chitkingOrient and chitkingShow output to match whole-picture breadcrumb style. Orient: replaced 4 clustered sections (Warnings/blockers, Allowed-but-risky roles, Recommended actions, Recovery options) with unified flow: stage progression [brackets] → readiness X/5 threshold ✓/✗ → maturity → compact Issues → unified Next steps. Removed risky-roles section entirely. Show: added stage progression + readiness context, merged Archived+Updated. Added shared formatStageProgression + formatReadinessLine helpers. 73 tests green. v0.0.8.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `HEAD~0` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

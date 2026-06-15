@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 13
+- **Total Sessions**: 14
 - **Last Active**: 2026-06-15
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~438 | Active |
+| `journal-1.md` | ~471 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 14 | 2026-06-15 | Redesign orient + show output: whole-picture, no clustering | HEAD~0 | `main` |
 | 13 | 2026-06-15 | Cleanup + refactor: dup ck-step, assess→mature, module split | `ddef04a` | `main` |
 | 12 | 2026-06-15 | chitking mature command + E2E lifecycle CI test | `55b386d` | `main` |
 | 11 | 2026-06-15 | Whole-picture breadcrumb: stage progression + readiness context | `08599dd` | `main` |
