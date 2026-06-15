@@ -304,3 +304,36 @@ Final piece of the proactive-guidance design: always-active plugin directive rep
 ### Next Steps
 
 - None - task complete
+
+
+## Session 10: Co-ownership followups: seed directive + docs sweep + codex parity
+
+**Date**: 2026-06-15
+**Task**: Co-ownership followups: seed directive + docs sweep + codex parity
+**Branch**: `main`
+
+### Summary
+
+Three follow-up items: (1) Relaxed seed-stage plugin directive to co-ownership style — agent writes to thread.md directly (hash-check first), presents summary for review. (2) Docs sweep: demo/README.md updated from 'humans own maturity' to co-ownership language, README.md got a Research Lifecycle section explaining circular stages/readiness/maturity/assess/iterate. (3) Codex adapter parity verified — shared ck-*.md templates, no plugin needed (Codex has no plugin system). 66 tests green. No version bump (docs-only).
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `d7c4dce` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
