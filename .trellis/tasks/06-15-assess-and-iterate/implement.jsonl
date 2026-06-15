@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend spec overview — command implementation patterns, directory structure"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "File/YAML read-write patterns for thread body parsing and config criteria reading"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Error handling for invalid check types, missing sections, no-active-thread errors"}
+{"file": ".trellis/spec/guides/chitking-product-doctrine.md", "reason": "Product doctrine — humans own maturity/readiness, recommend-only, Chitking-native naming"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Reuse existing helpers (readThread, loadConfig, chitkingArchive, chitkingNew, appendToSection)"}

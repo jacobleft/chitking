@@ -22,6 +22,8 @@ Currently migrated:
 - `chitking restore <thread>`
 - `chitking delete <thread> --yes`
 - `chitking orient`
+- `chitking assess [thread]`
+- `chitking iterate <title> [--slug <slug>]`
 - `chitking step [--to <stage>] [--readiness <0-5>] [--reason <text>]`
 - `chitking dispatch [--role <role>]`
 - `chitking record --type <type> --text <text> [--commit <ref>]`

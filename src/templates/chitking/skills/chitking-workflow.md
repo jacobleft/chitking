@@ -25,8 +25,9 @@ Humans own research direction, stage, maturity, and readiness checkpoints. Agent
 
 ## Command Boundaries
 
-- Thread lifecycle commands are top-level: `chitking new <title> [--slug <slug>]`, `chitking list`, `chitking show [thread]`, `chitking focus <thread>`, `chitking rename <thread> <title>`, `chitking archive <thread> --yes`, `chitking restore <thread>`, and `chitking delete <thread> --yes`.
+- Thread lifecycle commands are top-level: `chitking new <title> [--slug <slug>]`, `chitking list`, `chitking show [thread]`, `chitking focus <thread>`, `chitking rename <thread> <title>`, `chitking archive <thread> --yes`, `chitking restore <thread>`, `chitking delete <thread> --yes`, and `chitking iterate <title> [--slug <slug>]`.
 - `chitking new` creates `research/<thread>/thread.md`, creates the thread context cache directory, and focuses the new thread. Only run it when the user wants a new durable research thread.
+- `chitking iterate <title> [--slug <slug>]` archives the active thread and creates a successor thread with a `predecessor` link. The new thread starts at seed/nascent/readiness 1; the researcher decides what content to carry forward.
 - `chitking list` shows non-archived threads. `chitking show [thread]` summarizes the named thread or the active thread, including the source thread file and generated context cache path.
 - `chitking focus <thread>` sets the active-thread pointer for an existing non-archived thread. Do not focus an archived thread; restore it first if the user asks to resume it.
 - `chitking rename <thread> <title>` updates the human-readable title in `research/<thread>/thread.md` while keeping the slug/directory stable.
@@ -34,6 +35,7 @@ Humans own research direction, stage, maturity, and readiness checkpoints. Agent
 - `chitking restore <thread>` restores an archived thread. It does not require `--yes` because it is an undo/recovery operation.
 - `chitking delete <thread> --yes` removes the thread's durable `research/<thread>/` directory. The explicit `--yes` is required; never delete a thread unless the user clearly requested deletion.
 - `chitking orient` reads the active thread, source files, config, generated packets, and Git activity to summarize stage, maturity, readiness, blockers, stale packets, risky roles, and next safe actions. Use it to orient; do not treat it as permission to mutate files.
+- `chitking assess [thread]` evaluates structural criteria against config and prints readiness-to-advance and maturity recommendations. It is read-only and recommend-only; humans must apply any changes with `chitking step` or by editing frontmatter.
 - `chitking step` changes stage/readiness and records the reason in `thread.md`. Because humans own stage/readiness, only run or emulate this command when explicitly instructed by the user or calling workflow.
 - `chitking dispatch [--role <role>]` regenerates `research/<thread>/context/<role>.yaml` for a role (or all roles when `--role` is omitted). Packets are generated cache and should not replace reading `research/project.md` and `research/<thread>/thread.md`.
 - `chitking record --type <type> --text "..."` appends factual output to the active thread. Use it only when the user or calling workflow asks you to record evidence, failures, decisions, or revisions.

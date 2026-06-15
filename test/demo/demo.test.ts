@@ -26,6 +26,8 @@ const EXPECTED_CK_COMMANDS = [
   "ck-restore",
   "ck-delete",
   "ck-orient",
+  "ck-assess",
+  "ck-iterate",
   "ck-step",
   "ck-dispatch",
   "ck-record",

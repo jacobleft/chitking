@@ -1,10 +1,12 @@
 export { PRODUCT_DESCRIPTION, PRODUCT_NAME, VERSION } from "./constants.js";
 export {
   chitkingArchive,
+  chitkingAssess,
   chitkingDelete,
   chitkingDispatch,
   chitkingFocus,
   chitkingInit,
+  chitkingIterate,
   chitkingList,
   chitkingNew,
   chitkingOrient,
@@ -16,6 +18,7 @@ export {
   formatChitkingStatus,
   getChitkingStatus,
   parseRecordType,
+  type AssessCriterion,
   type ChitkingStatus,
   type ConfirmationOptions,
   type DispatchOptions,

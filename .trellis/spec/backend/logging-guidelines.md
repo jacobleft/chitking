@@ -64,7 +64,11 @@ When `new`, `focus`, `step`, or `init` (with an active thread) complete their pr
 console.log(`Dispatched ${roleCount} role packets for ${slug}.`);
 ```
 
-Use `--no-dispatch` on `init`/`new`/`focus`/`step` to opt out of auto-dispatch entirely. `init` with no active thread skips dispatch silently.
+Use `--no-dispatch` on `init`/`new`/`focus`/`step`/`iterate` to opt out of auto-dispatch entirely. `init` with no active thread skips dispatch silently.
+
+### Commander `--no-*` flag ↔ command function boundary
+
+Commander parses `--no-dispatch` as `{ dispatch: false }`, but command functions (`chitkingNew`, `chitkingFocus`, `chitkingStep`, `chitkingIterate`, `chitkingInit`) expect `{ noDispatch: true }`. The CLI layer must translate between these two conventions. Use the `withNoDispatch()` adapter in `src/cli/chitking.ts` to bridge the boundary. Without it, `--no-dispatch` silently dispatches anyway — unit tests miss this because they call command functions directly, bypassing Commander's option parser.
 
 ### Error output
 

@@ -34,6 +34,8 @@ const CK_COMMANDS = [
   "ck-step",
   "ck-dispatch",
   "ck-record",
+  "ck-assess",
+  "ck-iterate",
 ] as const;
 type CkCommand = (typeof CK_COMMANDS)[number];
 const CK_COMMAND_DESCRIPTIONS: Record<CkCommand, string> = {
@@ -61,6 +63,10 @@ const CK_COMMAND_DESCRIPTIONS: Record<CkCommand, string> = {
     "Generate Chitking role prompt packets for the active thread.",
   "ck-record":
     "Append factual role output to the active Chitking research thread when asked.",
+  "ck-assess":
+    "Heuristic content evaluation that recommends but does not apply stage/readiness changes.",
+  "ck-iterate":
+    "Archive the active thread and create a new thread with a predecessor link.",
 };
 const OPENCODE_DIR = ".opencode";
 const OPENCODE_AGENTS_DIR = "agents";
@@ -145,6 +151,12 @@ export interface RecordOptions {
   text: string;
 }
 
+export interface AssessCriterion {
+  section?: string;
+  check: string;
+  value?: number | string;
+}
+
 interface RolePrompt {
   objective: string;
   stop_conditions: string[];
@@ -172,6 +184,8 @@ interface ResearchConfig {
   stages: string[];
   stage_advancement: Record<string, number>;
   maturity_levels: string[];
+  stage_criteria: Record<string, AssessCriterion[]>;
+  maturity_criteria: Record<string, AssessCriterion[]>;
   roles: Record<string, RoleDefinition>;
   project_incomplete_markers: string[];
 }
@@ -186,6 +200,7 @@ interface ThreadFrontmatter {
   recorded_commits: string[];
   updated_at: string;
   archived?: boolean;
+  predecessor?: string;
 }
 
 interface ParsedThread {
@@ -450,6 +465,12 @@ function normalizeConfig(
         (item): item is string => typeof item === "string",
       )
     : (defaults?.project_incomplete_markers ?? []);
+  const stageCriteria = isRecord(raw.stage_criteria)
+    ? parseAssessCriteria(raw.stage_criteria)
+    : (defaults?.stage_criteria ?? {});
+  const maturityCriteria = isRecord(raw.maturity_criteria)
+    ? parseAssessCriteria(raw.maturity_criteria)
+    : (defaults?.maturity_criteria ?? {});
 
   return {
     schema_version:
@@ -459,9 +480,62 @@ function normalizeConfig(
     stages: stages.length > 0 ? stages : (defaults?.stages ?? []),
     stage_advancement: { ...defaults?.stage_advancement, ...stageAdvancement },
     maturity_levels: maturityLevels,
+    stage_criteria: stageCriteria,
+    maturity_criteria: maturityCriteria,
     roles,
     project_incomplete_markers: markers,
   };
+}
+
+function parseAssessCriterion(raw: unknown): AssessCriterion {
+  if (!isRecord(raw)) {
+    throw new Error("Assessment criterion must be a YAML mapping");
+  }
+  if (typeof raw.check === "string") {
+    const value = raw.value;
+    if (
+      value !== undefined &&
+      typeof value !== "number" &&
+      typeof value !== "string"
+    ) {
+      throw new Error("Assessment criterion value must be a number or string");
+    }
+    return {
+      section: typeof raw.section === "string" ? raw.section : undefined,
+      check: raw.check,
+      value,
+    };
+  }
+  if (typeof raw.history_contains === "string") {
+    return {
+      check: "history_contains",
+      value: raw.history_contains,
+    };
+  }
+  throw new Error(
+    'Assessment criterion must have a "check" field or a "history_contains" key',
+  );
+}
+
+function parseAssessCriteria(raw: unknown): Record<string, AssessCriterion[]> {
+  if (!isRecord(raw)) return {};
+  const result: Record<string, AssessCriterion[]> = {};
+  for (const [key, value] of Object.entries(raw)) {
+    if (Array.isArray(value)) {
+      result[key] = value.map((item, index) => {
+        try {
+          return parseAssessCriterion(item);
+        } catch (error) {
+          throw new Error(
+            `${key}[${index}]: ${error instanceof Error ? error.message : error}`,
+          );
+        }
+      });
+    } else {
+      result[key] = [];
+    }
+  }
+  return result;
 }
 
 function defaultConfig(): ResearchConfig {
@@ -766,6 +840,27 @@ function resolveActiveThread(cwd: string): string {
   return active.active_thread;
 }
 
+function resolveActiveThreadReadOnly(cwd: string): string {
+  const active = parseActiveState(cwd);
+  if (!active.active_thread) {
+    throw new Error(
+      "No active Chitking thread. Run chitking new <title> or chitking focus <thread> first.",
+    );
+  }
+  if (!fs.existsSync(getThreadPath(cwd, active.active_thread))) {
+    throw new Error(
+      `Active Chitking thread is missing: ${active.active_thread}. Run chitking list or chitking focus <thread>.`,
+    );
+  }
+  const thread = readThread(cwd, active.active_thread);
+  if (isThreadArchived(thread)) {
+    throw new Error(
+      `Active Chitking thread is archived: ${active.active_thread}. Run chitking restore ${active.active_thread} or chitking focus <thread>.`,
+    );
+  }
+  return active.active_thread;
+}
+
 function slugifyTitle(title: string): string {
   const slug = title
     .toLowerCase()
@@ -847,6 +942,9 @@ function parseThreadContent(content: string): ParsedThread {
   };
   if (raw.archived === true) {
     frontmatter.archived = true;
+  }
+  if (typeof raw.predecessor === "string" && raw.predecessor.length > 0) {
+    frontmatter.predecessor = raw.predecessor;
   }
   return {
     frontmatter,
@@ -954,6 +1052,76 @@ function appendToSection(body: string, section: string, text: string): string {
   const before = body.slice(0, insertAt).trimEnd();
   const after = body.slice(insertAt);
   return `${before}\n${entry}${after}`;
+}
+
+function extractSectionBody(body: string, section: string): string {
+  const heading = `## ${section}`;
+  const headingIndex = body.indexOf(heading);
+  if (headingIndex === -1) {
+    return "";
+  }
+  const afterHeading = headingIndex + heading.length;
+  const nextHeadingMatch = /\n## /g;
+  nextHeadingMatch.lastIndex = afterHeading;
+  const nextHeading = nextHeadingMatch.exec(body);
+  const endIndex = nextHeading?.index ?? body.length;
+  return body.slice(afterHeading, endIndex).trim();
+}
+
+function evaluateCriterion(
+  body: string,
+  criterion: AssessCriterion,
+): { passed: boolean; detail: string } {
+  switch (criterion.check) {
+    case "non-empty": {
+      const sectionBody = extractSectionBody(body, criterion.section ?? "");
+      const text = sectionBody.replace(/\s+/g, " ").trim();
+      const passed = text.length > 0;
+      return {
+        passed,
+        detail: passed ? "non-empty" : "empty (0 words)",
+      };
+    }
+    case "min-bullets": {
+      const sectionBody = extractSectionBody(body, criterion.section ?? "");
+      const bullets = sectionBody
+        .split("\n")
+        .filter((line) => line.trim().startsWith("-")).length;
+      const required = Number(criterion.value ?? 0);
+      const passed = bullets >= required;
+      return {
+        passed,
+        detail: `≥${required} bullets (${bullets} found)`,
+      };
+    }
+    case "min-words": {
+      const sectionBody = extractSectionBody(body, criterion.section ?? "");
+      const words = sectionBody
+        .trim()
+        .split(/\s+/)
+        .filter((word) => word.length > 0).length;
+      const required = Number(criterion.value ?? 0);
+      const passed = words >= required;
+      return {
+        passed,
+        detail: `≥${required} words (${words} found)`,
+      };
+    }
+    case "history_contains": {
+      const sectionBody = extractSectionBody(
+        body,
+        "Decisions & Maturity History",
+      );
+      const needle = String(criterion.value ?? "");
+      const passed = sectionBody.toLowerCase().includes(needle.toLowerCase());
+      return {
+        passed,
+        detail: passed ? `contains "${needle}"` : `missing "${needle}"`,
+      };
+    }
+    default:
+      throw new Error(`Unknown assess check type: ${criterion.check}`);
+  }
 }
 
 function resolveCommit(cwd: string, ref: string): string | null {
@@ -1366,6 +1534,177 @@ export function chitkingOrient(cwd: string = process.cwd()): string {
   const output = lines.join("\n");
   console.log(output);
   return output;
+}
+
+export function chitkingAssess(
+  thread?: string,
+  cwd: string = process.cwd(),
+): string {
+  const config = loadConfig(cwd);
+  const slug = thread ? validateSlug(thread) : resolveActiveThreadReadOnly(cwd);
+  const parsedThread = readThread(cwd, slug);
+  const { frontmatter, body } = parsedThread;
+
+  const lines: string[] = [
+    `Assessment for thread: ${slug}`,
+    "",
+    `Stage: ${frontmatter.stage} (readiness ${frontmatter.readiness}, maturity ${frontmatter.maturity})`,
+    "",
+  ];
+
+  const stageCriteria = config.stage_criteria[frontmatter.stage] ?? [];
+  const failedStageSections: string[] = [];
+  if (stageCriteria.length === 0) {
+    lines.push(`No criteria configured for stage ${frontmatter.stage}.`);
+  } else {
+    lines.push(
+      `Stage advancement criteria (to advance from ${frontmatter.stage}):`,
+    );
+    let passedCount = 0;
+    for (const criterion of stageCriteria) {
+      const result = evaluateCriterion(body, criterion);
+      const sectionName = criterion.section ?? "Decisions & Maturity History";
+      lines.push(`  ${result.passed ? "✓" : "✗"} ${sectionName}: ${result.detail}`);
+      if (result.passed) {
+        passedCount++;
+      } else {
+        failedStageSections.push(sectionName);
+      }
+    }
+    const ready = passedCount === stageCriteria.length;
+    lines.push(
+      `→ Readiness to advance: ${passedCount}/${stageCriteria.length} criteria met — ${ready ? "ready to step" : "not ready to step"}`,
+    );
+  }
+
+  lines.push("");
+
+  const maturityIndex = config.maturity_levels.indexOf(frontmatter.maturity);
+  const nextMaturity =
+    maturityIndex >= 0 && maturityIndex < config.maturity_levels.length - 1
+      ? config.maturity_levels[maturityIndex + 1]
+      : null;
+
+  if (!nextMaturity) {
+    lines.push("Already at highest maturity level.");
+  } else {
+    const maturityCriteria = config.maturity_criteria[nextMaturity] ?? [];
+    if (maturityCriteria.length === 0) {
+      lines.push(`No criteria configured for maturity ${nextMaturity}.`);
+    } else {
+      lines.push(`Maturity criteria (for next level: ${nextMaturity}):`);
+      let passedCount = 0;
+      for (const criterion of maturityCriteria) {
+        const result = evaluateCriterion(body, criterion);
+        const sectionName = criterion.section ?? "Decisions & Maturity History";
+        lines.push(
+          `  ${result.passed ? "✓" : "✗"} ${sectionName}: ${result.detail}`,
+        );
+        if (result.passed) passedCount++;
+      }
+      const recommend =
+        passedCount === maturityCriteria.length
+          ? nextMaturity
+          : frontmatter.maturity;
+      lines.push(
+        `→ Maturity recommendation: ${recommend} (${passedCount}/${maturityCriteria.length} criteria met)`,
+      );
+      lines.push(
+        `→ To apply: edit thread.md frontmatter \`maturity: ${recommend}\``,
+      );
+    }
+  }
+
+  lines.push("", "Suggested next actions:");
+  if (failedStageSections.length > 0) {
+    for (const section of failedStageSections) {
+      lines.push(`  - Fill ${section} to advance readiness.`);
+    }
+  }
+  if (nextMaturity) {
+    const maturityCriteria = config.maturity_criteria[nextMaturity] ?? [];
+    const evidenceCriterion = maturityCriteria.find(
+      (criterion) => criterion.section === "Evidence",
+    );
+    if (
+      evidenceCriterion &&
+      !evaluateCriterion(body, evidenceCriterion).passed
+    ) {
+      lines.push(`  - chitking record --type evidence --text "..."`);
+    }
+  }
+  const currentStageIndex = config.stages.indexOf(frontmatter.stage);
+  const nextStage =
+    currentStageIndex >= 0 && currentStageIndex < config.stages.length - 1
+      ? config.stages[currentStageIndex + 1]
+      : null;
+  if (failedStageSections.length === 0 && nextStage) {
+    lines.push(`  - chitking step --to ${nextStage} --reason "..."`);
+  }
+  if (lines[lines.length - 1] === "Suggested next actions:") {
+    lines.push("  - Configure assessment criteria in .chitking/config.yaml.");
+  }
+
+  const output = lines.join("\n");
+  console.log(output);
+  return output;
+}
+
+export function chitkingIterate(
+  title: string,
+  options: NewThreadOptions = {},
+  cwd: string = process.cwd(),
+): string {
+  if (!fs.existsSync(getProjectPath(cwd))) {
+    throw new Error("research/project.md is required. Run chitking init first.");
+  }
+  const config = loadConfig(cwd);
+  const oldSlug = resolveActiveThread(cwd);
+  const oldThread = readThread(cwd, oldSlug);
+  requireThreadNotArchived(oldSlug, oldThread);
+
+  oldThread.frontmatter.archived = true;
+  oldThread.frontmatter.updated_at = nowIso();
+  writeThread(cwd, oldSlug, oldThread);
+  clearActiveThreadIfMatches(cwd, oldSlug);
+
+  const newSlug = options.slug
+    ? validateSlug(options.slug)
+    : slugifyTitle(title);
+  const newThreadPath = getThreadPath(cwd, newSlug);
+  if (fs.existsSync(newThreadPath)) {
+    throw new Error(`Thread already exists: ${newSlug}`);
+  }
+  ensureDir(getThreadDir(cwd, newSlug));
+  ensureDir(getContextDir(cwd, newSlug));
+
+  const newThread: ParsedThread = {
+    frontmatter: {
+      thread: newSlug,
+      title,
+      stage: "seed",
+      maturity: "nascent",
+      readiness: 1,
+      readiness_source: "human",
+      recorded_commits: [],
+      updated_at: nowIso(),
+      predecessor: oldSlug,
+    },
+    body: defaultThreadBody(),
+  };
+  newThread.body = appendToSection(
+    newThread.body,
+    "Decisions & Maturity History",
+    `Iterated from ${oldSlug} (archived).`,
+  );
+  writeThread(cwd, newSlug, newThread);
+  writeActiveState(cwd, newSlug);
+
+  console.log(`Iterated: ${oldSlug} → ${newSlug}`);
+  if (!options.noDispatch) {
+    autoDispatch(cwd, newSlug, config);
+  }
+  return newSlug;
 }
 
 export function chitkingStep(

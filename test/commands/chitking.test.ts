@@ -16,10 +16,12 @@ import { parse } from "yaml";
 
 import {
   chitkingArchive,
+  chitkingAssess,
   chitkingDelete,
   chitkingDispatch,
   chitkingFocus,
   chitkingInit,
+  chitkingIterate,
   chitkingList,
   chitkingNew,
   chitkingOrient,
@@ -45,6 +47,8 @@ const EXPECTED_CK_COMMANDS = [
   "ck-restore",
   "ck-delete",
   "ck-orient",
+  "ck-assess",
+  "ck-iterate",
   "ck-step",
   "ck-dispatch",
   "ck-record",
@@ -61,6 +65,8 @@ const CK_COMMAND_SNIPPETS: Record<ExpectedCkCommand, string> = {
   "ck-restore": "chitking restore <thread-slug>",
   "ck-delete": "chitking delete <thread-slug> --yes",
   "ck-orient": "chitking orient",
+  "ck-assess": "chitking assess [thread]",
+  "ck-iterate": 'chitking iterate "<thread title>" [--slug <slug>]',
   "ck-step": "chitking step",
   "ck-dispatch": "chitking dispatch [--role <role>]",
   "ck-record": "chitking record --type <type> --text",
@@ -118,6 +124,8 @@ describe("chitking command skeleton", () => {
     expect(help).toContain("restore");
     expect(help).toContain("delete");
     expect(help).toContain("orient");
+    expect(help).toContain("assess");
+    expect(help).toContain("iterate");
     expect(help).toContain("step");
     expect(help).toContain("dispatch");
     expect(help).toContain("record");
@@ -902,5 +910,300 @@ legacy.
         path.join(cwd, "research", "contact-stability", "context", "build.yaml"),
       ),
     ).toBe(false);
+  });
+
+  it("assess prints pass/fail stage and maturity criteria for the active thread", () => {
+    const cwd = makeTempDir("chitking-assess-");
+    vi.spyOn(console, "log").mockImplementation(() => undefined);
+    chitkingInit(cwd);
+    chitkingNew("Contact Stability", { noDispatch: true }, cwd);
+    const threadPath = path.join(cwd, "research", "contact-stability", "thread.md");
+    const threadText = readText(threadPath);
+    writeFileSync(
+      threadPath,
+      threadText.replace(
+        "## Theory Brief\n",
+        "## Theory Brief\n\nA comprehensive theory brief that explains the core contact stability hypothesis with enough detail to evaluate the thread as it develops further.\n",
+      ),
+      "utf-8",
+    );
+
+    const output = chitkingAssess(undefined, cwd);
+
+    expect(output).toContain("Assessment for thread: contact-stability");
+    expect(output).toContain("Stage: seed");
+    expect(output).toContain("Stage advancement criteria (to advance from seed):");
+    expect(output).toContain("✓ Theory Brief: non-empty");
+    expect(output).toContain("✗ Current Claim: empty (0 words)");
+    expect(output).toContain("→ Readiness to advance: 1/2 criteria met — not ready to step");
+    expect(output).toContain("Maturity criteria (for next level: developing):");
+    expect(output).toContain("✓ Theory Brief: ≥20 words (");
+    expect(output).toContain("✗ Current Claim: empty (0 words)");
+    expect(output).toContain("Fill Current Claim to advance readiness.");
+  });
+
+  it("assess recommends step when all stage criteria pass", () => {
+    const cwd = makeTempDir("chitking-assess-ready-");
+    vi.spyOn(console, "log").mockImplementation(() => undefined);
+    chitkingInit(cwd);
+    chitkingNew("Contact Stability", { noDispatch: true }, cwd);
+    const threadPath = path.join(cwd, "research", "contact-stability", "thread.md");
+    const threadText = readText(threadPath);
+    writeFileSync(
+      threadPath,
+      threadText
+        .replace(
+          "## Theory Brief\n",
+          "## Theory Brief\n\nA clear theory brief with enough words.\n",
+        )
+        .replace(
+          "## Current Claim\n",
+          "## Current Claim\n\nThe current claim under investigation.\n",
+        ),
+      "utf-8",
+    );
+
+    const output = chitkingAssess(undefined, cwd);
+
+    expect(output).toContain("→ Readiness to advance: 2/2 criteria met — ready to step");
+    expect(output).toContain("chitking step --to briefed --reason");
+  });
+
+  it("assess works on a non-active thread", () => {
+    const cwd = makeTempDir("chitking-assess-named-");
+    vi.spyOn(console, "log").mockImplementation(() => undefined);
+    chitkingInit(cwd);
+    chitkingNew("Contact Stability", { noDispatch: true }, cwd);
+    chitkingNew("Friction Model", { noDispatch: true }, cwd);
+
+    const output = chitkingAssess("contact-stability", cwd);
+
+    expect(output).toContain("Assessment for thread: contact-stability");
+  });
+
+  it("assess errors when there is no active thread and no thread arg", () => {
+    const cwd = makeTempDir("chitking-assess-no-active-");
+    vi.spyOn(console, "log").mockImplementation(() => undefined);
+    chitkingInit(cwd);
+
+    expect(() => chitkingAssess(undefined, cwd)).toThrow(
+      "No active Chitking thread",
+    );
+  });
+
+  it("assess errors on unknown check type in config", () => {
+    const cwd = makeTempDir("chitking-assess-bad-check-");
+    vi.spyOn(console, "log").mockImplementation(() => undefined);
+    chitkingInit(cwd);
+    chitkingNew("Contact Stability", { noDispatch: true }, cwd);
+    writeFileSync(
+      path.join(cwd, ".chitking", "config.yaml"),
+      `schema_version: 1
+stages:
+  - seed
+stage_advancement:
+  seed: 1
+maturity_levels:
+  - nascent
+stage_criteria:
+  seed:
+    - { section: "Theory Brief", check: unknown-check }
+maturity_criteria: {}
+roles: {}
+project_incomplete_markers: []
+`,
+      "utf-8",
+    );
+
+    expect(() => chitkingAssess("contact-stability", cwd)).toThrow(
+      "Unknown assess check type: unknown-check",
+    );
+  });
+
+  it("assess handles missing criteria config gracefully", () => {
+    const cwd = makeTempDir("chitking-assess-missing-criteria-");
+    vi.spyOn(console, "log").mockImplementation(() => undefined);
+    chitkingInit(cwd);
+    chitkingNew("Contact Stability", { noDispatch: true }, cwd);
+    writeFileSync(
+      path.join(cwd, ".chitking", "config.yaml"),
+      `schema_version: 1
+stages:
+  - seed
+stage_advancement:
+  seed: 1
+maturity_levels:
+  - nascent
+  - developing
+stage_criteria: {}
+maturity_criteria: {}
+roles: {}
+project_incomplete_markers: []
+`,
+      "utf-8",
+    );
+
+    const output = chitkingAssess("contact-stability", cwd);
+
+    expect(output).toContain("No criteria configured for stage seed.");
+    expect(output).toContain("No criteria configured for maturity developing.");
+  });
+
+  it("assess is read-only and does not modify thread or active state", () => {
+    const cwd = makeTempDir("chitking-assess-readonly-");
+    vi.spyOn(console, "log").mockImplementation(() => undefined);
+    chitkingInit(cwd);
+    chitkingNew("Contact Stability", { noDispatch: true }, cwd);
+    const threadPath = path.join(cwd, "research", "contact-stability", "thread.md");
+    const activePath = path.join(cwd, ".chitking", "active.yaml");
+    const threadBefore = readText(threadPath);
+    const activeBefore = readText(activePath);
+
+    chitkingAssess(undefined, cwd);
+
+    expect(readText(threadPath)).toBe(threadBefore);
+    expect(readText(activePath)).toBe(activeBefore);
+  });
+
+  it("iterate archives the active thread, creates a successor with predecessor, and focuses it", () => {
+    const cwd = makeTempDir("chitking-iterate-");
+    vi.spyOn(console, "log").mockImplementation(() => undefined);
+    chitkingInit(cwd);
+    chitkingNew("Contact Stability", { noDispatch: true }, cwd);
+
+    const newSlug = chitkingIterate("Friction Model", { noDispatch: true }, cwd);
+
+    expect(newSlug).toBe("friction-model");
+    expect(readFrontmatter(path.join(cwd, "research", "contact-stability", "thread.md")).archived).toBe(true);
+    const newFrontmatter = readFrontmatter(path.join(cwd, "research", "friction-model", "thread.md"));
+    expect(newFrontmatter).toMatchObject({
+      thread: "friction-model",
+      title: "Friction Model",
+      stage: "seed",
+      maturity: "nascent",
+      readiness: 1,
+      predecessor: "contact-stability",
+    });
+    expect(readText(path.join(cwd, "research", "friction-model", "thread.md"))).toContain(
+      "Iterated from contact-stability (archived).",
+    );
+    expect(readText(path.join(cwd, ".chitking", "active.yaml"))).toContain(
+      "active_thread: friction-model",
+    );
+    expect(chitkingList(cwd)).not.toContain("contact-stability");
+  });
+
+  it("iterate --slug option overrides generated slug", () => {
+    const cwd = makeTempDir("chitking-iterate-slug-");
+    vi.spyOn(console, "log").mockImplementation(() => undefined);
+    chitkingInit(cwd);
+    chitkingNew("Contact Stability", { noDispatch: true }, cwd);
+
+    const newSlug = chitkingIterate("Friction Model", { slug: "friction", noDispatch: true }, cwd);
+
+    expect(newSlug).toBe("friction");
+    expect(existsSync(path.join(cwd, "research", "friction", "thread.md"))).toBe(true);
+    expect(readFrontmatter(path.join(cwd, "research", "friction", "thread.md")).predecessor).toBe("contact-stability");
+  });
+
+  it("iterate auto-dispatches all role packets for the new thread", () => {
+    const cwd = makeTempDir("chitking-iterate-auto-dispatch-");
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    chitkingInit(cwd);
+    chitkingNew("Contact Stability", { noDispatch: true }, cwd);
+
+    chitkingIterate("Friction Model", {}, cwd);
+
+    expect(logSpy).toHaveBeenCalledWith(
+      "Dispatched 7 role packets for friction-model.",
+    );
+    for (const role of ["build", "dreamer", "oracle", "plan", "review", "synthesize", "verify"]) {
+      expect(
+        existsSync(
+          path.join(cwd, "research", "friction-model", "context", `${role}.yaml`),
+        ),
+      ).toBe(true);
+    }
+  });
+
+  it("iterate --no-dispatch skips auto-dispatch", () => {
+    const cwd = makeTempDir("chitking-iterate-no-dispatch-");
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    chitkingInit(cwd);
+    chitkingNew("Contact Stability", { noDispatch: true }, cwd);
+
+    chitkingIterate("Friction Model", { noDispatch: true }, cwd);
+
+    expect(logSpy).not.toHaveBeenCalledWith(
+      expect.stringContaining("Dispatched"),
+    );
+    expect(
+      existsSync(path.join(cwd, "research", "friction-model", "context", "build.yaml")),
+    ).toBe(false);
+  });
+
+  it("iterate errors when there is no active thread", () => {
+    const cwd = makeTempDir("chitking-iterate-no-active-");
+    vi.spyOn(console, "log").mockImplementation(() => undefined);
+    chitkingInit(cwd);
+
+    expect(() => chitkingIterate("Friction Model", { noDispatch: true }, cwd)).toThrow(
+      "No active Chitking thread",
+    );
+  });
+
+  it("CLI --no-dispatch flag skips auto-dispatch through the option-parsing layer", () => {
+    const cwd = makeTempDir("chitking-cli-no-dispatch-");
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    chitkingInit(cwd, { noDispatch: true });
+    const originalCwd = process.cwd();
+    process.chdir(cwd);
+    try {
+      const program = createChitkingProgram();
+      program.parse(["new", "Contact Stability", "--no-dispatch"], {
+        from: "user",
+      });
+
+      expect(logSpy).toHaveBeenCalledWith(
+        "Created and focused research thread: contact-stability",
+      );
+      expect(logSpy).not.toHaveBeenCalledWith(
+        expect.stringContaining("Dispatched"),
+      );
+      expect(
+        existsSync(
+          path.join(cwd, "research", "contact-stability", "context", "build.yaml"),
+        ),
+      ).toBe(false);
+    } finally {
+      process.chdir(originalCwd);
+    }
+  });
+
+  it("CLI iterate --no-dispatch flag skips auto-dispatch through the option-parsing layer", () => {
+    const cwd = makeTempDir("chitking-cli-iterate-no-dispatch-");
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    chitkingInit(cwd, { noDispatch: true });
+    chitkingNew("Contact Stability", { noDispatch: true }, cwd);
+    const originalCwd = process.cwd();
+    process.chdir(cwd);
+    try {
+      const program = createChitkingProgram();
+      program.parse(["iterate", "Friction Model", "--no-dispatch"], {
+        from: "user",
+      });
+
+      expect(logSpy).toHaveBeenCalledWith("Iterated: contact-stability → friction-model");
+      expect(logSpy).not.toHaveBeenCalledWith(
+        expect.stringContaining("Dispatched"),
+      );
+      expect(
+        existsSync(
+          path.join(cwd, "research", "friction-model", "context", "build.yaml"),
+        ),
+      ).toBe(false);
+    } finally {
+      process.chdir(originalCwd);
+    }
   });
 });

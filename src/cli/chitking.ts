@@ -4,10 +4,12 @@ import chalk from "chalk";
 
 import {
   chitkingArchive,
+  chitkingAssess,
   chitkingDelete,
   chitkingDispatch,
   chitkingFocus,
   chitkingInit,
+  chitkingIterate,
   chitkingList,
   chitkingNew,
   chitkingOrient,
@@ -27,6 +29,17 @@ function parseReadiness(value: string): number {
     throw new Error("Readiness must be an integer from 0 to 5.");
   }
   return parsed;
+}
+
+/**
+ * Commander exposes `--no-dispatch` as `options.dispatch = false` (default
+ * `true`). Command functions expect `{ noDispatch: true }`. Translate at the
+ * CLI adapter boundary so the public command API stays stable.
+ */
+function withNoDispatch<T extends { dispatch?: boolean }>(
+  options: T,
+): { noDispatch?: boolean } {
+  return options.dispatch === false ? { noDispatch: true } : {};
 }
 
 export function createChitkingProgram(): Command {
@@ -50,8 +63,11 @@ export function createChitkingProgram(): Command {
       "Initialize Chitking scaffold in the current repository",
     )
     .option("--no-dispatch", "Skip auto-dispatch of role packets")
-    .action((options: { noDispatch?: boolean }) =>
-      runWithErrors(() => chitkingInit(process.cwd(), options)),
+    .allowExcessArguments(false)
+    .action((options: { dispatch?: boolean }) =>
+      runWithErrors(() =>
+        chitkingInit(process.cwd(), withNoDispatch(options)),
+      ),
     );
 
   program
@@ -60,8 +76,11 @@ export function createChitkingProgram(): Command {
     .argument("<title>", "Thread title")
     .option("--slug <slug>", "Override generated slug")
     .option("--no-dispatch", "Skip auto-dispatch of role packets")
-    .action((title: string, options: { slug?: string; noDispatch?: boolean }) =>
-      runWithErrors(() => chitkingNew(title, options)),
+    .allowExcessArguments(false)
+    .action((title: string, options: { slug?: string; dispatch?: boolean }) =>
+      runWithErrors(() =>
+        chitkingNew(title, { slug: options.slug, ...withNoDispatch(options) }),
+      ),
     );
 
   program
@@ -80,8 +99,11 @@ export function createChitkingProgram(): Command {
     .description("Set the active research thread")
     .argument("<thread>", "Thread slug to focus")
     .option("--no-dispatch", "Skip auto-dispatch of role packets")
-    .action((activeThread: string, options: { noDispatch?: boolean }) =>
-      runWithErrors(() => chitkingFocus(activeThread, options)),
+    .allowExcessArguments(false)
+    .action((activeThread: string, options: { dispatch?: boolean }) =>
+      runWithErrors(() =>
+        chitkingFocus(activeThread, withNoDispatch(options)),
+      ),
     );
 
   program
@@ -125,14 +147,34 @@ export function createChitkingProgram(): Command {
     .action(() => runWithErrors(() => chitkingOrient()));
 
   program
+    .command("assess")
+    .description("Heuristic content evaluation for the active thread")
+    .argument("[thread]", "Thread slug to assess; defaults to active thread")
+    .action((thread?: string) => runWithErrors(() => chitkingAssess(thread)));
+
+  program
     .command("step")
     .description("Move stage/readiness with explicit human consent")
     .option("--to <stage>", "Explicit target stage")
     .option("--readiness <0-5>", "Set readiness score", parseReadiness)
     .option("--reason <text>", "Required reason for explicit --to moves")
     .option("--no-dispatch", "Skip auto-dispatch of role packets")
-    .action((options: { to?: string; readiness?: number; reason?: string; noDispatch?: boolean }) =>
-      runWithErrors(() => chitkingStep(options)),
+    .allowExcessArguments(false)
+    .action(
+      (options: {
+        to?: string;
+        readiness?: number;
+        reason?: string;
+        dispatch?: boolean;
+      }) =>
+        runWithErrors(() =>
+          chitkingStep({
+            to: options.to,
+            readiness: options.readiness,
+            reason: options.reason,
+            ...withNoDispatch(options),
+          }),
+        ),
     );
 
   program
@@ -162,6 +204,23 @@ export function createChitkingProgram(): Command {
         commit?: string;
         text: string;
       }) => runWithErrors(() => chitkingRecord(options)),
+    );
+
+  program
+    .command("iterate")
+    .description("Archive the active thread and create a new successor thread")
+    .argument("<title>", "Title for the new thread")
+    .option("--slug <slug>", "Override generated slug")
+    .option("--no-dispatch", "Skip auto-dispatch of role packets")
+    .allowExcessArguments(false)
+    .action(
+      (title: string, options: { slug?: string; dispatch?: boolean }) =>
+        runWithErrors(() =>
+          chitkingIterate(title, {
+            slug: options.slug,
+            ...withNoDispatch(options),
+          }),
+        ),
     );
 
   program.addHelpText(

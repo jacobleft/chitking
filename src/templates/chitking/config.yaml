@@ -22,6 +22,34 @@ maturity_levels:
   - developing
   - established
   - mature
+stage_criteria:
+  seed:
+    - { section: "Theory Brief", check: non-empty }
+    - { section: "Current Claim", check: non-empty }
+  briefed:
+    - { section: "Capability Gap", check: non-empty }
+  gap-identified:
+    - { section: "Verification Obligations", check: min-bullets, value: 1 }
+  specified:
+    - { section: "Next Safe Actions", check: min-bullets, value: 1 }
+  verification-planned:
+    - { section: "Verification Obligations", check: min-words, value: 20 }
+  implementation-ready:
+    - { section: "Next Safe Actions", check: min-words, value: 20 }
+  evidence-recorded:
+    - { section: "Evidence", check: min-bullets, value: 2 }
+  synthesis-ready:
+    - { section: "Evidence", check: min-bullets, value: 3 }
+    - { section: "Failed Paths", check: non-empty }
+maturity_criteria:
+  developing:
+    - { section: "Theory Brief", check: min-words, value: 20 }
+    - { section: "Current Claim", check: non-empty }
+  established:
+    - { section: "Evidence", check: min-bullets, value: 3 }
+    - { section: "Failed Paths", check: non-empty }
+  mature:
+    - { history_contains: "cycle complete" }
 roles:
   plan:
     min_stage: briefed
