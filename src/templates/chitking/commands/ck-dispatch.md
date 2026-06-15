@@ -26,4 +26,4 @@ Generate role prompt packets for the active Chitking thread.
 
 - Generated packets under `research/<thread>/context/*.yaml` are cache/context, not durable source of truth.
 - Do not edit generated packet YAML by hand; rerun `chitking dispatch` when stale.
-- Do not use packet generation as approval to change maturity/readiness or source files.
+- Do not use packet generation as approval to change stage/readiness or source files.

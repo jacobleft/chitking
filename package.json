@@ -1,6 +1,6 @@
 {
   "name": "chitking",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Chitking (哲徑), a standalone research path CLI",
   "private": true,
   "type": "module",

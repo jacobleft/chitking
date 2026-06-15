@@ -54,6 +54,7 @@ Example from `src/commands/chitking.ts`:
 ```ts
 const lines = [
   `Active thread: ${slug}`,
+  `Stage: ${thread.frontmatter.stage}`,
   `Maturity: ${thread.frontmatter.maturity}`,
   `Readiness: ${thread.frontmatter.readiness} (${thread.frontmatter.readiness_source})`,
   "",

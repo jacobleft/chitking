@@ -24,4 +24,4 @@ List non-archived Chitking research threads.
 
 - Do not inspect `research/` manually as a replacement for `chitking list`.
 - Do not focus, restore, archive, delete, or create a thread from list output unless the user explicitly asks.
-- Do not change maturity or readiness; humans own those checkpoints.
+- Do not change stage or readiness; humans own those checkpoints.

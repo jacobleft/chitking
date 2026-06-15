@@ -24,4 +24,4 @@ Archive a Chitking research thread.
 
 - Do not add `--yes` unless the user clearly asked to archive that exact thread.
 - Do not edit `research/<thread-slug>/thread.md` or `.chitking/active.yaml` by hand to simulate archival.
-- Archiving is a lifecycle state change, not a maturity/readiness change.
+- Archiving is a lifecycle state change, not a stage/readiness change.

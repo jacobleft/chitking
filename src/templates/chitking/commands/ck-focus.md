@@ -23,5 +23,5 @@ Set the active Chitking research thread.
 ## Boundaries
 
 - Do not focus archived threads. If the user wants an archived thread, ask whether to restore it with `chitking restore <thread-slug>` first.
-- Do not change maturity or readiness; humans own those checkpoints.
+- Do not change stage or readiness; humans own those checkpoints.
 - Do not edit `.chitking/active.yaml` by hand to simulate this command.

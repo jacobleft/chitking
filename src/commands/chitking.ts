@@ -40,7 +40,7 @@ const CK_COMMAND_DESCRIPTIONS: Record<CkCommand, string> = {
   "ck-init":
     "Initialize Chitking scaffold and generated adapters without overwriting existing generated files.",
   "ck-new":
-    "Create and focus a Chitking research thread from a title while preserving human-owned maturity/readiness boundaries.",
+    "Create and focus a Chitking research thread from a title while preserving human-owned stage/readiness boundaries.",
   "ck-list": "List non-archived Chitking research threads.",
   "ck-show":
     "Show a Chitking research thread summary and source-of-truth paths.",
@@ -56,7 +56,7 @@ const CK_COMMAND_DESCRIPTIONS: Record<CkCommand, string> = {
   "ck-orient":
     "Print the human checkpoint for the active Chitking research thread.",
   "ck-step":
-    "Move Chitking maturity/readiness only with explicit human consent.",
+    "Move Chitking stage/readiness only with explicit human consent.",
   "ck-dispatch":
     "Generate Chitking role prompt packets for the active thread.",
   "ck-record":
@@ -152,7 +152,7 @@ interface RolePrompt {
 
 interface RoleDefinition {
   prompt: RolePrompt;
-  min_maturity?: string;
+  min_stage?: string;
   min_readiness?: number;
   warnings: string[];
 }
@@ -169,8 +169,9 @@ interface OpenCodePermissions {
 
 interface ResearchConfig {
   schema_version: number;
-  maturity_ladder: string[];
-  readiness_thresholds: Record<string, number>;
+  stages: string[];
+  stage_advancement: Record<string, number>;
+  maturity_levels: string[];
   roles: Record<string, RoleDefinition>;
   project_incomplete_markers: string[];
 }
@@ -178,6 +179,7 @@ interface ResearchConfig {
 interface ThreadFrontmatter {
   thread: string;
   title: string;
+  stage: string;
   maturity: string;
   readiness: number;
   readiness_source: string;
@@ -204,6 +206,7 @@ interface GitSnapshot {
 interface ThreadSummary {
   slug: string;
   title: string;
+  stage: string;
   maturity: string;
   readiness: number;
   archived: boolean;
@@ -406,18 +409,39 @@ function normalizeConfig(
   raw: Record<string, unknown>,
   defaults: ResearchConfig | undefined,
 ): ResearchConfig {
-  const maturity = Array.isArray(raw.maturity_ladder)
-    ? raw.maturity_ladder.filter(
-        (item): item is string => typeof item === "string",
-      )
-    : (defaults?.maturity_ladder ?? []);
-  const thresholds = isRecord(raw.readiness_thresholds)
+  const stagesSource = Array.isArray(raw.stages)
+    ? raw.stages
+    : Array.isArray(raw.maturity_ladder)
+      ? raw.maturity_ladder
+      : null;
+  const stages = stagesSource
+    ? stagesSource.filter((item): item is string => typeof item === "string")
+    : (defaults?.stages ?? []);
+  const advancementSource = isRecord(raw.stage_advancement)
+    ? raw.stage_advancement
+    : isRecord(raw.readiness_thresholds)
+      ? raw.readiness_thresholds
+      : null;
+  const stageAdvancement = advancementSource
     ? Object.fromEntries(
-        Object.entries(raw.readiness_thresholds).filter(
+        Object.entries(advancementSource).filter(
           (entry): entry is [string, number] => typeof entry[1] === "number",
         ),
       )
-    : (defaults?.readiness_thresholds ?? {});
+    : (defaults?.stage_advancement ?? {});
+  const maturityLevelsSource = Array.isArray(raw.maturity_levels)
+    ? raw.maturity_levels
+    : null;
+  const maturityLevels = maturityLevelsSource
+    ? maturityLevelsSource.filter(
+        (item): item is string => typeof item === "string",
+      )
+    : (defaults?.maturity_levels ?? [
+        "nascent",
+        "developing",
+        "established",
+        "mature",
+      ]);
   const roles = isRecord(raw.roles)
     ? parseRoles(raw.roles, defaults?.roles ?? {})
     : (defaults?.roles ?? {});
@@ -432,9 +456,9 @@ function normalizeConfig(
       typeof raw.schema_version === "number"
         ? raw.schema_version
         : (defaults?.schema_version ?? 1),
-    maturity_ladder:
-      maturity.length > 0 ? maturity : (defaults?.maturity_ladder ?? []),
-    readiness_thresholds: { ...defaults?.readiness_thresholds, ...thresholds },
+    stages: stages.length > 0 ? stages : (defaults?.stages ?? []),
+    stage_advancement: { ...defaults?.stage_advancement, ...stageAdvancement },
+    maturity_levels: maturityLevels,
     roles,
     project_incomplete_markers: markers,
   };
@@ -461,14 +485,14 @@ function defaultRoleContractContent(
     .map((condition) => `- ${condition}`)
     .join("\n");
   const gates = [
-    role.min_maturity ? `- Minimum maturity: ${role.min_maturity}` : null,
+    role.min_stage ? `- Minimum stage: ${role.min_stage}` : null,
     role.min_readiness !== undefined
       ? `- Minimum readiness: ${role.min_readiness}`
       : null,
   ].filter((line): line is string => line !== null);
   const gateText = gates.length > 0 ? gates.join("\n") : "- No stage gate.";
 
-  return `# Chitking ${roleTitle(roleName)} Role\n\n## Objective\n\n${role.prompt.objective}\n\n## Scope and Gates\n\n${gateText}\n\n## Required Inputs\n\n- Read \`research/project.md\` before the active thread.\n- Read the active \`research/<thread>/thread.md\`.\n- Use the per-thread packet from \`chitking dispatch --role ${roleName}\` for current file references, maturity, readiness, warnings, and stop conditions.\n\n## Warnings\n\n${warnings}\n\n## Stop Conditions\n\n${stopConditions}\n\n## Universal Boundaries\n\n- Do not change maturity or readiness; humans own those checkpoints.\n- Do not treat generated packets as source of truth; project and thread Markdown files are canonical.\n- Record factual output with \`chitking record\` only when a human or calling workflow asks for it.\n`;
+  return `# Chitking ${roleTitle(roleName)} Role\n\n## Objective\n\n${role.prompt.objective}\n\n## Scope and Gates\n\n${gateText}\n\n## Required Inputs\n\n- Read \`research/project.md\` before the active thread.\n- Read the active \`research/<thread>/thread.md\`.\n- Use the per-thread packet from \`chitking dispatch --role ${roleName}\` for current file references, stage, readiness, warnings, and stop conditions.\n\n## Warnings\n\n${warnings}\n\n## Stop Conditions\n\n${stopConditions}\n\n## Universal Boundaries\n\n- Do not change stage or readiness; humans own those checkpoints.\n- Do not treat generated packets as source of truth; project and thread Markdown files are canonical.\n- Record factual output with \`chitking record\` only when a human or calling workflow asks for it.\n`;
 }
 
 function dreamerRoleContractContent(role: RoleDefinition): string {
@@ -537,7 +561,7 @@ function chitkingWorkflowSkillContent(): string {
 function opencodeChitkingWorkflowSkillContent(canonicalContent: string): string {
   return `---
 name: chitking-workflow
-description: Trigger when working in a Chitking repo, using chitking commands, interpreting Chitking workflow/state files, or handling research threads, maturity, readiness, roles, or generated packets.
+description: Trigger when working in a Chitking repo, using chitking commands, interpreting Chitking workflow/state files, or handling research threads, stage, maturity, readiness, roles, or generated packets.
 ---
 ${canonicalContent}`;
 }
@@ -640,9 +664,14 @@ function parseRoles(
           (item): item is string => typeof item === "string",
         )
       : [];
+    const minStage =
+      typeof value.min_stage === "string"
+        ? value.min_stage
+        : typeof value.min_maturity === "string"
+          ? value.min_maturity
+          : undefined;
     roles[name] = {
-      min_maturity:
-        typeof value.min_maturity === "string" ? value.min_maturity : undefined,
+      min_stage: minStage,
       min_readiness:
         typeof value.min_readiness === "number"
           ? value.min_readiness
@@ -761,6 +790,26 @@ function validateSlug(slug: string): string {
   return normalized;
 }
 
+function readStageAndMaturity(raw: Record<string, unknown>): { stage: string; maturity: string } {
+  const stageValue = typeof raw.stage === "string" && raw.stage.length > 0 ? raw.stage : null;
+  const legacyMaturityValue =
+    typeof raw.maturity === "string" && raw.maturity.length > 0 ? raw.maturity : null;
+
+  if (stageValue) {
+    const maturityValue = legacyMaturityValue ?? "nascent";
+    return { stage: stageValue, maturity: maturityValue };
+  }
+
+  if (legacyMaturityValue) {
+    console.warn(
+      "Migrating frontmatter: maturity→stage. Run chitking show to verify.",
+    );
+    return { stage: legacyMaturityValue, maturity: "nascent" };
+  }
+
+  throw new Error("thread.md frontmatter missing required string field: stage");
+}
+
 function parseThreadContent(content: string): ParsedThread {
   const normalized = content.replace(/\r\n/g, "\n");
   const match = /^---\n([\s\S]*?)\n---\n?([\s\S]*)$/.exec(normalized);
@@ -783,12 +832,13 @@ function parseThreadContent(content: string): ParsedThread {
   }
   const thread = stringField(raw, "thread");
   const title = stringField(raw, "title");
-  const maturity = stringField(raw, "maturity");
+  const { stage, maturity } = readStageAndMaturity(raw);
   const readinessSource = stringField(raw, "readiness_source");
   const updatedAt = stringField(raw, "updated_at");
   const frontmatter: ThreadFrontmatter = {
     thread,
     title,
+    stage,
     maturity,
     readiness,
     readiness_source: readinessSource,
@@ -862,6 +912,7 @@ function listThreadSummaries(cwd: string, includeArchived = false): ThreadSummar
       return {
         slug,
         title: thread.frontmatter.title,
+        stage: thread.frontmatter.stage,
         maturity: thread.frontmatter.maturity,
         readiness: thread.frontmatter.readiness,
         archived: isThreadArchived(thread),
@@ -878,7 +929,7 @@ function formatThreadSummary(
 ): string {
   const activeText = summary.slug === activeThread ? " [active]" : "";
   const archivedText = summary.archived ? " [archived]" : "";
-  return `- ${summary.slug} — ${summary.title} (${summary.maturity}, readiness ${summary.readiness})${activeText}${archivedText}`;
+  return `- ${summary.slug} — ${summary.title} (${summary.stage}, readiness ${summary.readiness})${activeText}${archivedText}`;
 }
 
 function ensureThreadSections(body: string): string[] {
@@ -964,16 +1015,16 @@ function roleRiskWarnings(
       `readiness ${thread.readiness} is below role minimum ${role.min_readiness}`,
     );
   }
-  if (role.min_maturity) {
-    const currentIndex = config.maturity_ladder.indexOf(thread.maturity);
-    const requiredIndex = config.maturity_ladder.indexOf(role.min_maturity);
+  if (role.min_stage) {
+    const currentIndex = config.stages.indexOf(thread.stage);
+    const requiredIndex = config.stages.indexOf(role.min_stage);
     if (
       requiredIndex !== -1 &&
       currentIndex !== -1 &&
       currentIndex < requiredIndex
     ) {
       warnings.push(
-        `maturity ${thread.maturity} is before role minimum ${role.min_maturity}`,
+        `stage ${thread.stage} is before role minimum ${role.min_stage}`,
       );
     }
   }
@@ -1081,7 +1132,8 @@ export function chitkingNew(
     frontmatter: {
       thread: slug,
       title,
-      maturity: "seed",
+      stage: "seed",
+      maturity: "nascent",
       readiness: 1,
       readiness_source: "human",
       recorded_commits: [],
@@ -1122,6 +1174,7 @@ export function chitkingShow(
   const lines = [
     `Thread: ${slug}`,
     `Title: ${parsedThread.frontmatter.title}`,
+    `Stage: ${parsedThread.frontmatter.stage}`,
     `Maturity: ${parsedThread.frontmatter.maturity}`,
     `Readiness: ${parsedThread.frontmatter.readiness} (${parsedThread.frontmatter.readiness_source})`,
     `Archived: ${isThreadArchived(parsedThread) ? "yes" : "no"}`,
@@ -1246,16 +1299,15 @@ export function chitkingOrient(cwd: string = process.cwd()): string {
       warnings: roleRiskWarnings(role, config, thread.frontmatter),
     }))
     .filter((role) => role.warnings.length > 0);
-  const currentIndex = config.maturity_ladder.indexOf(
-    thread.frontmatter.maturity,
-  );
-  const nextMaturity =
-    currentIndex >= 0 && currentIndex < config.maturity_ladder.length - 1
-      ? config.maturity_ladder[currentIndex + 1]
-      : null;
+  const currentIndex = config.stages.indexOf(thread.frontmatter.stage);
+  const nextStage =
+    currentIndex >= 0 && currentIndex < config.stages.length - 1
+      ? config.stages[currentIndex + 1]
+      : config.stages[0];
 
   const lines = [
     `Active thread: ${slug}`,
+    `Stage: ${thread.frontmatter.stage}`,
     `Maturity: ${thread.frontmatter.maturity}`,
     `Readiness: ${thread.frontmatter.readiness} (${thread.frontmatter.readiness_source})`,
     "",
@@ -1294,9 +1346,9 @@ export function chitkingOrient(cwd: string = process.cwd()): string {
   }
 
   lines.push("", "Recommended next safe actions:");
-  if (nextMaturity) {
+  if (nextStage) {
     lines.push(
-      `- If the thread is ready, run: chitking step --to ${nextMaturity} --reason "..."`,
+      `- If the thread is ready, run: chitking step --to ${nextStage} --reason "..."`,
     );
   }
   lines.push(
@@ -1308,7 +1360,7 @@ export function chitkingOrient(cwd: string = process.cwd()): string {
     '- Record a failed path with: chitking record --type failure --text "..."',
   );
   lines.push(
-    '- Move maturity backward with: chitking step --to <maturity> --reason "..."',
+    '- Move stage backward with: chitking step --to <stage> --reason "..."',
   );
 
   const output = lines.join("\n");
@@ -1323,58 +1375,52 @@ export function chitkingStep(
   const config = loadConfig(cwd);
   const slug = resolveActiveThread(cwd);
   const thread = readThread(cwd, slug);
-  const maturityIndex = config.maturity_ladder.indexOf(
-    thread.frontmatter.maturity,
-  );
-  if (maturityIndex === -1) {
-    throw new Error(`Unknown current maturity: ${thread.frontmatter.maturity}`);
+  const stageIndex = config.stages.indexOf(thread.frontmatter.stage);
+  if (stageIndex === -1) {
+    throw new Error(`Unknown current stage: ${thread.frontmatter.stage}`);
   }
 
+  let targetStage = options.to;
+  const isLoopBack =
+    !targetStage && stageIndex === config.stages.length - 1;
   const readiness =
-    options.readiness !== undefined
+    options.readiness !== undefined && !isLoopBack
       ? validateReadiness(options.readiness)
-      : thread.frontmatter.readiness;
-  let targetMaturity = options.to;
-  if (targetMaturity) {
+      : 1;
+  if (targetStage) {
     if (!options.reason || options.reason.trim().length === 0) {
       throw new Error("chitking step --to requires --reason.");
     }
-    if (!config.maturity_ladder.includes(targetMaturity)) {
-      throw new Error(`Unknown maturity: ${targetMaturity}`);
+    if (!config.stages.includes(targetStage)) {
+      throw new Error(`Unknown stage: ${targetStage}`);
     }
   } else {
-    if (maturityIndex >= config.maturity_ladder.length - 1) {
-      throw new Error("Thread is already at the final maturity stage.");
-    }
-    targetMaturity = config.maturity_ladder[maturityIndex + 1];
-    const threshold = config.readiness_thresholds[targetMaturity] ?? 0;
-    if (readiness < threshold) {
-      throw new Error(
-        `Readiness ${readiness} is below threshold ${threshold} for ${targetMaturity}.`,
-      );
-    }
+    targetStage = isLoopBack
+      ? config.stages[0]
+      : config.stages[stageIndex + 1];
   }
 
-  const previousMaturity = thread.frontmatter.maturity;
+  const previousStage = thread.frontmatter.stage;
   const previousReadiness = thread.frontmatter.readiness;
-  thread.frontmatter.maturity = targetMaturity;
-  if (options.readiness !== undefined) {
-    thread.frontmatter.readiness = readiness;
-    thread.frontmatter.readiness_source = "human";
-  }
+  thread.frontmatter.stage = targetStage;
+  thread.frontmatter.readiness = readiness;
+  thread.frontmatter.readiness_source = "human";
   thread.frontmatter.updated_at = nowIso();
   const reason = options.reason ? ` Reason: ${options.reason.trim()}` : "";
   const readinessText =
     previousReadiness === thread.frontmatter.readiness
       ? `readiness ${thread.frontmatter.readiness}`
       : `readiness ${previousReadiness}→${thread.frontmatter.readiness}`;
+  const historyEntry = isLoopBack
+    ? `cycle complete; looped ${previousStage}→${targetStage}; readiness reset to 1.${reason}`
+    : `stage ${previousStage}→${targetStage}; ${readinessText}.${reason}`;
   thread.body = appendToSection(
     thread.body,
     "Decisions & Maturity History",
-    `maturity ${previousMaturity}→${targetMaturity}; ${readinessText}.${reason}`,
+    historyEntry,
   );
   writeThread(cwd, slug, thread);
-  console.log(`Updated ${slug}: ${previousMaturity} → ${targetMaturity}`);
+  console.log(`Updated ${slug}: ${previousStage} → ${targetStage}`);
   if (!options.noDispatch) {
     autoDispatch(cwd, slug, config);
   }
@@ -1395,6 +1441,7 @@ function buildRolePacket(
     thread: slug,
     project_file: toRepoPath(cwd, getProjectPath(cwd)),
     thread_file: toRepoPath(cwd, getThreadPath(cwd, slug)),
+    stage: thread.frontmatter.stage,
     maturity: thread.frontmatter.maturity,
     readiness: thread.frontmatter.readiness,
     created_at: nowIso(),

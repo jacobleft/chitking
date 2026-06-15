@@ -44,11 +44,23 @@ function parseSimpleYamlMap(content) {
 
 function parseThreadFrontmatter(content) {
   const match = /^---\n([\s\S]*?)\n---/.exec(String(content || "").replace(/\r\n/g, "\n"))
-  return match ? parseSimpleYamlMap(match[1]) : {}
+  const raw = match ? parseSimpleYamlMap(match[1]) : {}
+  const result = {}
+  if (typeof raw.stage === "string" && raw.stage.length > 0) {
+    result.stage = raw.stage
+    result.maturity = typeof raw.maturity === "string" && raw.maturity.length > 0 ? raw.maturity : "nascent"
+  } else if (typeof raw.maturity === "string" && raw.maturity.length > 0) {
+    result.stage = raw.maturity
+    result.maturity = "nascent"
+  }
+  for (const key of ["thread", "title", "readiness", "readiness_source", "updated_at", "archived"]) {
+    if (Object.prototype.hasOwnProperty.call(raw, key)) result[key] = raw[key]
+  }
+  return result
 }
 
 function parseConfig(content) {
-  const config = { maturity_ladder: [], roles: {} }
+  const config = { stages: [], stage_advancement: {}, maturity_levels: [], roles: {} }
   let section = null
   let role = null
   let listKey = null
@@ -58,8 +70,20 @@ function parseConfig(content) {
     const trimmed = line.trim()
     if (!trimmed || trimmed.startsWith("#")) continue
 
-    if (/^maturity_ladder:\s*$/.test(trimmed)) {
-      section = "maturity_ladder"
+    if (/^stages:\s*$/.test(trimmed) || /^maturity_ladder:\s*$/.test(trimmed)) {
+      section = "stages"
+      role = null
+      listKey = null
+      continue
+    }
+    if (/^stage_advancement:\s*$/.test(trimmed) || /^readiness_thresholds:\s*$/.test(trimmed)) {
+      section = "stage_advancement"
+      role = null
+      listKey = null
+      continue
+    }
+    if (/^maturity_levels:\s*$/.test(trimmed)) {
+      section = "maturity_levels"
       role = null
       listKey = null
       continue
@@ -70,9 +94,20 @@ function parseConfig(content) {
       listKey = null
       continue
     }
-    if (section === "maturity_ladder" && /^-\s+/.test(trimmed)) {
-      config.maturity_ladder.push(parseScalar(trimmed.slice(2)))
+    if (section === "stages" && /^-\s+/.test(trimmed)) {
+      config.stages.push(parseScalar(trimmed.slice(2)))
       continue
+    }
+    if (section === "maturity_levels" && /^-\s+/.test(trimmed)) {
+      config.maturity_levels.push(parseScalar(trimmed.slice(2)))
+      continue
+    }
+    if (section === "stage_advancement" || section === "readiness_thresholds") {
+      const advanceMatch = /^(\w[\w_-]*):\s*(.*?)\s*$/.exec(trimmed)
+      if (advanceMatch) {
+        config.stage_advancement[advanceMatch[1]] = parseScalar(advanceMatch[2])
+        continue
+      }
     }
     if (section !== "roles") continue
 
@@ -85,9 +120,10 @@ function parseConfig(content) {
     }
     if (!role) continue
     const currentRole = config.roles[role]
-    const scalarMatch = /^\s{4}(min_maturity|min_readiness):\s*(.*?)\s*$/.exec(line)
+    const scalarMatch = /^\s{4}(min_stage|min_maturity|min_readiness):\s*(.*?)\s*$/.exec(line)
     if (scalarMatch) {
-      currentRole[scalarMatch[1]] = parseScalar(scalarMatch[2])
+      const key = scalarMatch[1] === "min_maturity" ? "min_stage" : scalarMatch[1]
+      currentRole[key] = parseScalar(scalarMatch[2])
       listKey = null
       continue
     }
@@ -143,12 +179,12 @@ function gateWarnings(roleConfig, config, thread) {
   if (typeof roleConfig?.min_readiness === "number" && readiness < roleConfig.min_readiness) {
     warnings.push(`readiness ${readiness} is below role minimum ${roleConfig.min_readiness}`)
   }
-  if (roleConfig?.min_maturity) {
-    const ladder = Array.isArray(config.maturity_ladder) ? config.maturity_ladder : []
-    const currentIndex = ladder.indexOf(thread.maturity)
-    const requiredIndex = ladder.indexOf(roleConfig.min_maturity)
+  if (roleConfig?.min_stage) {
+    const ladder = Array.isArray(config.stages) && config.stages.length > 0 ? config.stages : (config.maturity_ladder || [])
+    const currentIndex = ladder.indexOf(thread.stage)
+    const requiredIndex = ladder.indexOf(roleConfig.min_stage)
     if (currentIndex !== -1 && requiredIndex !== -1 && currentIndex < requiredIndex) {
-      warnings.push(`maturity ${thread.maturity} is before role minimum ${roleConfig.min_maturity}`)
+      warnings.push(`stage ${thread.stage} is before role minimum ${roleConfig.min_stage}`)
     }
   }
   return warnings
@@ -196,7 +232,7 @@ function buildRoleContext(directory, role) {
     : `Packet: not generated; run chitking dispatch --role ${role} if a durable packet is needed.`
   const objective = state.roleConfig?.prompt?.objective ? `Objective: ${state.roleConfig.prompt.objective}\n` : ""
 
-  return `${CHITKING_MARKER}\n<chitking-role-context>\nRole: ${role}\nActive thread: ${state.activeThread}\nMaturity: ${state.thread.maturity}\nReadiness: ${state.thread.readiness} (${state.thread.readiness_source || "unknown source"})\nProject file: ${state.projectPath}\nThread file: ${state.threadPath}\n${packetLine}\n${objective}\nRole gate warnings:\n${warningLines}\nSafety boundaries:\n- Humans own maturity/readiness; recommend changes, do not apply them.\n- Injector is read-only; it did not mutate thread.md, active.yaml, config.yaml, or packets.\n- Read research/project.md before research/<thread>/thread.md.\n- Treat generated packets as cache, not source of truth.\n- Dreamer must not create implementation tasks or hand work directly to build/Executor.\n</chitking-role-context>`
+  return `${CHITKING_MARKER}\n<chitking-role-context>\nRole: ${role}\nActive thread: ${state.activeThread}\nStage: ${state.thread.stage}\nMaturity: ${state.thread.maturity}\nReadiness: ${state.thread.readiness} (${state.thread.readiness_source || "unknown source"})\nProject file: ${state.projectPath}\nThread file: ${state.threadPath}\n${packetLine}\n${objective}\nRole gate warnings:\n${warningLines}\nSafety boundaries:\n- Humans own stage/readiness; recommend changes, do not apply them.\n- Injector is read-only; it did not mutate thread.md, active.yaml, config.yaml, or packets.\n- Read research/project.md before research/<thread>/thread.md.\n- Treat generated packets as cache, not source of truth.\n- Dreamer must not create implementation tasks or hand work directly to build/Executor.\n</chitking-role-context>`
 }
 
 function buildMainBreadcrumb(directory) {
@@ -204,7 +240,7 @@ function buildMainBreadcrumb(directory) {
   if (state.missing) {
     return `<chitking-breadcrumb>\nChitking repo detected. ${state.missing}\nSafe next action: inspect research/project.md, then create/focus a thread.\n</chitking-breadcrumb>`
   }
-  return `<chitking-breadcrumb>\nActive Chitking thread: ${state.activeThread}\nMaturity: ${state.thread.maturity}\nReadiness: ${state.thread.readiness} (${state.thread.readiness_source || "unknown source"})\nSafe reminders: humans own maturity/readiness; read research/project.md before ${state.threadPath}; use chitking orient or chitking dispatch [--role <role>] before role fan-out.\n</chitking-breadcrumb>`
+  return `<chitking-breadcrumb>\nActive Chitking thread: ${state.activeThread}\nStage: ${state.thread.stage}\nMaturity: ${state.thread.maturity}\nReadiness: ${state.thread.readiness} (${state.thread.readiness_source || "unknown source"})\nSafe reminders: humans own stage/readiness; read research/project.md before ${state.threadPath}; use chitking orient or chitking dispatch [--role <role>] before role fan-out.\n</chitking-breadcrumb>`
 }
 
 function prependTextPart(output, text) {

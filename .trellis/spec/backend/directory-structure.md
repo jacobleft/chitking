@@ -52,7 +52,7 @@ demo/                        # committed Chitking example workspace and fixture
 
 - Add new CLI subcommands in `src/cli/chitking.ts`, then delegate to an exported function in `src/commands/chitking.ts`.
 - Keep parsing/Commander concerns in `src/cli/chitking.ts`. Example: `parseReadiness()` converts option text into a number before calling `chitkingStep()`.
-- Keep domain behavior in `src/commands/chitking.ts`. Example: `chitkingStep()` validates maturity/readiness and writes `thread.md`.
+- Keep domain behavior in `src/commands/chitking.ts`. Example: `chitkingStep()` validates stage/readiness transitions (with circular loop-back at the final stage) and writes `thread.md`.
 - Keep path-building helpers near the state they address. Example: `getThreadPath()`, `getContextPath()`, and `getOpenCodeAdapterPath()` live with the command implementation that uses them.
 - Keep template resolution in `src/templates/extract.ts`; command code imports `getChitkingRuntimeTemplatePath()` and `getOpenCodeTemplatePath()` rather than hard-coding `dist` paths.
 - Add tests beside the area being changed: command behavior in `test/commands/chitking.test.ts`, template resolution in `test/templates/extract.test.ts`.
@@ -80,8 +80,8 @@ demo/                        # committed Chitking example workspace and fixture
 ```ts
 program
   .command("step")
-  .description("Move maturity/readiness with explicit human consent")
-  .option("--to <maturity>", "Explicit target maturity")
+  .description("Move stage/readiness with explicit human consent")
+  .option("--to <stage>", "Explicit target stage")
   .option("--readiness <0-5>", "Set readiness score", parseReadiness)
   .option("--reason <text>", "Required reason for explicit --to moves")
   .action((options: { to?: string; readiness?: number; reason?: string }) =>

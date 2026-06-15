@@ -61,7 +61,7 @@ Generated context packets include `source_thread_updated_at` so Chitking can det
 Derived state should be recomputed from source files rather than stored as truth:
 
 - Role gate warnings come from config + thread frontmatter via `roleRiskWarnings()`.
-- Next maturity suggestions come from `config.maturity_ladder` and current thread maturity.
+- Next stage suggestions come from `config.stages` and the current thread stage. Stage advancement is circular: at the final stage (`synthesis-ready`), the next stage loops back to `seed`.
 - Stale packet warnings come from comparing packet `source_thread_updated_at` with thread `updated_at`.
 
 Example from `chitkingOrient()`:
@@ -82,5 +82,5 @@ const riskyRoles = Object.entries(config.roles)
 - Do not cache canonical research state in generated packets.
 - Do not store active thread state in module globals.
 - Do not treat `.opencode/` or `.codex/` adapters as canonical role definitions.
-- Do not let an agent or generated adapter silently change maturity/readiness.
+- Do not let an agent or generated adapter silently change stage/readiness/maturity.
 - Do not read `research/<thread>/thread.md` before `research/project.md` when acting as a Chitking role.

@@ -8,7 +8,7 @@
 
 Chitking currently has no database, ORM, migrations, network storage, or transaction manager. Durable product state is user-editable files:
 
-- `.chitking/config.yaml` for maturity ladder, thresholds, role definitions, warnings, and incomplete markers.
+- `.chitking/config.yaml` for stages, stage advancement thresholds, maturity levels, role definitions, warnings, and incomplete markers.
 - `.chitking/active.yaml` for the active-thread pointer.
 - `.chitking/roles/*.md` for canonical role contracts.
 - `research/project.md` for project-level research source of truth.
@@ -34,7 +34,7 @@ Generated context packets under `research/<thread>/context/*.yaml` are cache/con
 There is no migration system. The current convention is template/default normalization:
 
 - `defaultConfig()` reads `src/templates/chitking/config.yaml`.
-- `normalizeConfig()` merges user config with defaults for missing maturity ladder, thresholds, roles, and markers.
+- `normalizeConfig()` merges user config with defaults for missing stages, stage advancement thresholds, maturity levels, roles, and markers. It also accepts the legacy keys `maturity_ladder`, `readiness_thresholds`, and `min_maturity` as backward-compat aliases for `stages`, `stage_advancement`, and `min_stage` respectively.
 - Re-running `chitking init` creates missing scaffold files without overwriting existing user-edited files.
 
 If persistent schema changes are introduced later, update this guide with the actual migration mechanism before implementing the change.
@@ -48,7 +48,7 @@ If persistent schema changes are introduced later, update this guide with the ac
 - Thread directories use normalized slugs from `slugifyTitle()` / `validateSlug()`.
 - Thread source is always `research/<thread>/thread.md`.
 - Generated role packets are `research/<thread>/context/<role>.yaml`.
-- Config keys are snake_case YAML keys, matching current templates: `schema_version`, `maturity_ladder`, `readiness_thresholds`, `project_incomplete_markers`.
+- Config keys are snake_case YAML keys, matching current templates: `schema_version`, `stages`, `stage_advancement`, `maturity_levels`, `project_incomplete_markers`. Legacy aliases `maturity_ladder` and `readiness_thresholds` are still read for backward compat but not emitted by current templates.
 
 ---
 
@@ -101,4 +101,4 @@ const packet = {
 - Do not add a database/ORM layer for Chitking state without an explicit product requirement.
 - Do not treat `research/<thread>/context/*.yaml` as source of truth.
 - Do not overwrite user-edited role contracts, agents, skills, or plugin files during repeated init.
-- Do not silently mutate maturity/readiness in generated adapters or context injection.
+- Do not silently mutate stage/readiness/maturity in generated adapters or context injection.

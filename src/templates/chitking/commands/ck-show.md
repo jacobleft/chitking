@@ -25,4 +25,4 @@ Show a Chitking research thread summary and source-of-truth paths.
 
 - `chitking show` is read-only. Do not modify thread state based only on the summary.
 - Do not focus a thread just because it was shown; use `chitking focus <thread-slug>` only when requested.
-- Do not change maturity or readiness; humans own those checkpoints.
+- Do not change stage or readiness; humans own those checkpoints.

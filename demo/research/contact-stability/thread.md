@@ -1,7 +1,8 @@
 ---
 thread: contact-stability
 title: Contact Stability
-maturity: seed
+stage: seed
+maturity: nascent
 readiness: 1
 readiness_source: human
 recorded_commits: []
@@ -40,4 +41,4 @@ The thread lacks a verified comparison between the score and observed post-distu
 
 ## Decisions & Maturity History
 
-- 2026-06-11T00:00:00.000Z — Demo fixture starts at seed maturity with readiness 1. Humans must decide future maturity/readiness changes.
+- 2026-06-11T00:00:00.000Z — Demo fixture starts at seed stage with readiness 1. Humans must decide future stage/readiness changes.

@@ -1,6 +1,7 @@
 import {
   existsSync,
   mkdtempSync,
+  mkdirSync,
   readFileSync,
   readdirSync,
   rmSync,
@@ -179,7 +180,7 @@ describe("chitking command skeleton", () => {
       expect(codexCommand).toContain("## Boundaries");
     }
     expect(readFileSync(path.join(cwd, ".opencode", "commands", "ck-step.md"), "utf-8")).toContain(
-      "Humans own maturity/readiness",
+      "Humans own stage/readiness",
     );
     expect(readFileSync(path.join(cwd, ".codex", "skills", "ck-delete", "SKILL.md"), "utf-8")).toContain(
       "Do not add `--yes` unless the user clearly asked to delete",
@@ -233,13 +234,13 @@ describe("chitking command skeleton", () => {
     writeFileSync(
       path.join(cwd, ".chitking", "config.yaml"),
       `schema_version: 1
-maturity_ladder:
+stages:
   - seed
-readiness_thresholds:
+stage_advancement:
   seed: 1
 roles:
   critic:
-    min_maturity: seed
+    min_stage: seed
     min_readiness: 1
     warnings:
       - Critic must stay advisory.
@@ -307,7 +308,8 @@ project_incomplete_markers:
     expect(roleCall.args.prompt).toContain("<!-- chitking-context-injected -->");
     expect(roleCall.args.prompt).toContain("Role: build");
     expect(roleCall.args.prompt).toContain("Active thread: contact-stability");
-    expect(roleCall.args.prompt).toContain("Maturity: seed");
+    expect(roleCall.args.prompt).toContain("Stage: seed");
+    expect(roleCall.args.prompt).toContain("Maturity: nascent");
     expect(roleCall.args.prompt).toContain("Readiness: 1 (human)");
     expect(roleCall.args.prompt).toContain("Project file: research/project.md");
     expect(roleCall.args.prompt).toContain(
@@ -316,9 +318,9 @@ project_incomplete_markers:
     expect(roleCall.args.prompt).toContain("chitking dispatch --role build");
     expect(roleCall.args.prompt).toContain("readiness 1 is below role minimum 4");
     expect(roleCall.args.prompt).toContain(
-      "maturity seed is before role minimum implementation-ready",
+      "stage seed is before role minimum implementation-ready",
     );
-    expect(roleCall.args.prompt).toContain("Humans own maturity/readiness");
+    expect(roleCall.args.prompt).toContain("Humans own stage/readiness");
     expect(roleCall.args.prompt).toContain(
       "Dreamer must not create implementation tasks",
     );
@@ -330,7 +332,8 @@ project_incomplete_markers:
     expect(chatOutput.parts[0].text).toContain(
       "Active Chitking thread: contact-stability",
     );
-    expect(chatOutput.parts[0].text).toContain("Maturity: seed");
+    expect(chatOutput.parts[0].text).toContain("Stage: seed");
+    expect(chatOutput.parts[0].text).toContain("Maturity: nascent");
     expect(chatOutput.parts[0].text).toContain("Readiness: 1 (human)");
     expect(chatOutput.parts[0].text).toContain("user request");
 
@@ -353,7 +356,8 @@ project_incomplete_markers:
     expect(readFrontmatter(threadPath)).toMatchObject({
       thread: "contact-stability",
       title: "Contact Stability",
-      maturity: "seed",
+      stage: "seed",
+      maturity: "nascent",
       readiness: 1,
       readiness_source: "human",
       recorded_commits: [],
@@ -446,7 +450,7 @@ project_incomplete_markers:
     );
   });
 
-  it("step advances maturity, requires reasons, and appends history", () => {
+  it("step advances stage, resets readiness, requires reasons, and appends history", () => {
     const cwd = makeTempDir("chitking-step-");
     vi.spyOn(console, "log").mockImplementation(() => undefined);
     chitkingInit(cwd);
@@ -454,7 +458,8 @@ project_incomplete_markers:
 
     chitkingStep({}, cwd);
     let frontmatter = readFrontmatter(path.join(cwd, "research", "contact-stability", "thread.md"));
-    expect(frontmatter.maturity).toBe("briefed");
+    expect(frontmatter.stage).toBe("briefed");
+    expect(frontmatter.maturity).toBe("nascent");
     expect(frontmatter.readiness).toBe(1);
     expect(() => chitkingStep({ to: "gap-identified" }, cwd)).toThrow(
       "chitking step --to requires --reason",
@@ -463,9 +468,133 @@ project_incomplete_markers:
     chitkingStep({ to: "gap-identified", readiness: 2, reason: "human accepted the gap" }, cwd);
     const threadPath = path.join(cwd, "research", "contact-stability", "thread.md");
     frontmatter = readFrontmatter(threadPath);
-    expect(frontmatter.maturity).toBe("gap-identified");
+    expect(frontmatter.stage).toBe("gap-identified");
     expect(frontmatter.readiness).toBe(2);
     expect(readText(threadPath)).toContain("Reason: human accepted the gap");
+
+    // Forward step without explicit --readiness resets readiness to 1 (PRD: resets on every step).
+    chitkingStep({ to: "specified", reason: "moving forward" }, cwd);
+    frontmatter = readFrontmatter(threadPath);
+    expect(frontmatter.stage).toBe("specified");
+    expect(frontmatter.readiness).toBe(1);
+  });
+
+  it("step loops back to seed at the final stage and appends a cycle marker", () => {
+    const cwd = makeTempDir("chitking-step-loop-");
+    vi.spyOn(console, "log").mockImplementation(() => undefined);
+    chitkingInit(cwd);
+    chitkingNew("Contact Stability", { noDispatch: true }, cwd);
+    const threadPath = path.join(cwd, "research", "contact-stability", "thread.md");
+
+    // Advance to final stage
+    const stages = [
+      "briefed",
+      "gap-identified",
+      "specified",
+      "verification-planned",
+      "implementation-ready",
+      "evidence-recorded",
+      "synthesis-ready",
+    ];
+    for (const stage of stages) {
+      chitkingStep({ to: stage, reason: `advance to ${stage}` }, cwd);
+    }
+
+    let frontmatter = readFrontmatter(threadPath);
+    expect(frontmatter.stage).toBe("synthesis-ready");
+
+    // Loop back
+    chitkingStep({ noDispatch: true }, cwd);
+    frontmatter = readFrontmatter(threadPath);
+    expect(frontmatter.stage).toBe("seed");
+    expect(frontmatter.readiness).toBe(1);
+    expect(readText(threadPath)).toContain("cycle complete; looped synthesis-ready→seed; readiness reset to 1.");
+  });
+
+  it("step loop-back forces readiness reset to 1 even when --readiness is provided", () => {
+    const cwd = makeTempDir("chitking-step-loop-override-");
+    vi.spyOn(console, "log").mockImplementation(() => undefined);
+    chitkingInit(cwd);
+    chitkingNew("Contact Stability", { noDispatch: true }, cwd);
+    const threadPath = path.join(cwd, "research", "contact-stability", "thread.md");
+
+    // Advance to final stage with high readiness.
+    const stages = [
+      "briefed",
+      "gap-identified",
+      "specified",
+      "verification-planned",
+      "implementation-ready",
+      "evidence-recorded",
+      "synthesis-ready",
+    ];
+    for (const stage of stages) {
+      chitkingStep({ to: stage, readiness: 5, reason: `advance to ${stage}` }, cwd);
+    }
+    expect(readFrontmatter(threadPath).stage).toBe("synthesis-ready");
+
+    // Loop back with explicit --readiness; loop-back must still force reset to 1.
+    chitkingStep({ readiness: 5, noDispatch: true }, cwd);
+    const frontmatter = readFrontmatter(threadPath);
+    expect(frontmatter.stage).toBe("seed");
+    expect(frontmatter.readiness).toBe(1);
+    expect(readText(threadPath)).toContain("readiness reset to 1.");
+  });
+
+  it("new threads include the holistic maturity field defaulting to nascent", () => {
+    const cwd = makeTempDir("chitking-maturity-field-");
+    vi.spyOn(console, "log").mockImplementation(() => undefined);
+    chitkingInit(cwd);
+
+    chitkingNew("Contact Stability", { noDispatch: true }, cwd);
+
+    const threadPath = path.join(cwd, "research", "contact-stability", "thread.md");
+    const frontmatter = readFrontmatter(threadPath);
+    expect(frontmatter).toMatchObject({
+      stage: "seed",
+      maturity: "nascent",
+      readiness: 1,
+    });
+  });
+
+  it("reads legacy frontmatter with maturity as stage and warns once", () => {
+    const cwd = makeTempDir("chitking-backward-compat-");
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    vi.spyOn(console, "log").mockImplementation(() => undefined);
+    chitkingInit(cwd);
+    const threadDir = path.join(cwd, "research", "legacy-thread");
+    mkdirSync(threadDir, { recursive: true });
+    mkdirSync(path.join(threadDir, "context"), { recursive: true });
+    writeFileSync(
+      path.join(threadDir, "thread.md"),
+      `---
+thread: legacy-thread
+title: Legacy Thread
+maturity: seed
+readiness: 1
+readiness_source: human
+recorded_commits: []
+updated_at: 2026-06-15T00:00:00.000Z
+---
+## Theory Brief
+
+legacy.
+`,
+      "utf-8",
+    );
+    writeFileSync(
+      path.join(cwd, ".chitking", "active.yaml"),
+      `active_thread: legacy-thread\nupdated_at: 2026-06-15T00:00:00.000Z\n`,
+      "utf-8",
+    );
+
+    const output = chitkingShow("legacy-thread", cwd);
+
+    expect(output).toContain("Stage: seed");
+    expect(output).toContain("Maturity: nascent");
+    expect(warnSpy).toHaveBeenCalledWith(
+      "Migrating frontmatter: maturity→stage. Run chitking show to verify.",
+    );
   });
 
   it("dispatch writes role YAML with file references instead of markdown content", () => {
@@ -483,7 +612,8 @@ project_incomplete_markers:
       thread: "contact-stability",
       project_file: "research/project.md",
       thread_file: "research/contact-stability/thread.md",
-      maturity: "seed",
+      stage: "seed",
+      maturity: "nascent",
       readiness: 1,
       source_thread_updated_at: readFrontmatter(
         path.join(cwd, "research", "contact-stability", "thread.md"),
@@ -511,7 +641,8 @@ project_incomplete_markers:
       thread: "contact-stability",
       project_file: "research/project.md",
       thread_file: "research/contact-stability/thread.md",
-      maturity: "seed",
+      stage: "seed",
+      maturity: "nascent",
       readiness: 1,
     });
     const packetText = readText(path.join(cwd, packetPath));
@@ -548,7 +679,7 @@ project_incomplete_markers:
     }
   });
 
-  it("orient reports maturity/readiness plus incomplete project and stale packet warnings", () => {
+  it("orient reports stage/maturity/readiness plus incomplete project and stale packet warnings", () => {
     const cwd = makeTempDir("chitking-orient-");
     vi.spyOn(console, "log").mockImplementation(() => undefined);
     chitkingInit(cwd);
@@ -559,7 +690,8 @@ project_incomplete_markers:
     const output = chitkingOrient(cwd);
 
     expect(output).toContain("Active thread: contact-stability");
-    expect(output).toContain("Maturity: briefed");
+    expect(output).toContain("Stage: briefed");
+    expect(output).toContain("Maturity: nascent");
     expect(output).toContain("Readiness: 1 (human)");
     expect(output).toContain("research/project.md appears incomplete");
     expect(output).toContain("Generated context packet may be stale: build.yaml");

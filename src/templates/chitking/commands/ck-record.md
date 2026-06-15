@@ -23,5 +23,5 @@ Append factual role output to the active Chitking research thread.
 ## Boundaries
 
 - Record only factual output, evidence, failures, decisions, or revisions that the user/calling workflow asked to preserve.
-- Do not use `record` to silently promote maturity/readiness or rewrite the theory.
+- Do not use `record` to silently promote stage/readiness or rewrite the theory.
 - Do not edit `research/<thread>/thread.md` by hand to simulate this command.

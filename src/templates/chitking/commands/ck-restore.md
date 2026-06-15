@@ -23,4 +23,4 @@ Restore an archived Chitking research thread.
 
 - Restore is an undo/recovery action. It does not focus the thread by itself.
 - Do not edit `research/<thread-slug>/thread.md` by hand to simulate restore.
-- Do not change maturity or readiness; humans own those checkpoints.
+- Do not change stage or readiness; humans own those checkpoints.

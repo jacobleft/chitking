@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend spec overview — directory structure, error handling, quality guidelines for src/commands/ changes"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Error handling patterns for backward-compat reader, step loop-back errors, config validation"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "File/YAML read-write patterns for thread.md frontmatter and config.yaml schema changes"}
+{"file": ".trellis/spec/guides/chitking-product-doctrine.md", "reason": "Chitking-native naming rules — must preserve chitking/.chitking/research/ naming, no Trellis/rt language"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Reuse existing helpers (readThread, writeThread, loadConfig, validateReadiness) rather than duplicating"}

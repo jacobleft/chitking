@@ -214,7 +214,7 @@ describe("demo Chitking workspace", () => {
     expect(thread).toContain("thread: contact-stability");
     expect(thread).toContain("readiness_source: human");
     expect(project).toContain("Readiness is human-owned");
-    expect(thread).toContain("Humans must decide future maturity/readiness");
+    expect(thread).toContain("Humans must decide future stage/readiness");
     expect(allDemoText).not.toMatch(/Research Trellis|\brt\b/i);
   });
 });

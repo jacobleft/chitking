@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend spec overview — verify implementation follows directory structure and quality guidelines"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Quality bar — verify naming conventions, error handling, test coverage for the model redesign"}
+{"file": ".trellis/spec/guides/chitking-product-doctrine.md", "reason": "Product doctrine — verify no Trellis/rt naming leaked, Chitking-native names preserved"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Cross-layer check — verify frontmatter schema, config, plugin, templates, tests all align on the rename"}

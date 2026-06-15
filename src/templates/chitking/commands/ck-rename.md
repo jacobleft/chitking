@@ -23,4 +23,4 @@ Rename a Chitking research thread without changing its slug.
 
 - Rename changes only the human-readable title, not the slug or directory name.
 - Do not edit `research/<thread-slug>/thread.md` by hand to simulate this command.
-- Do not change maturity or readiness; humans own those checkpoints.
+- Do not change stage or readiness; humans own those checkpoints.

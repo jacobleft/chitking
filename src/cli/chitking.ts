@@ -126,8 +126,8 @@ export function createChitkingProgram(): Command {
 
   program
     .command("step")
-    .description("Move maturity/readiness with explicit human consent")
-    .option("--to <maturity>", "Explicit target maturity")
+    .description("Move stage/readiness with explicit human consent")
+    .option("--to <stage>", "Explicit target stage")
     .option("--readiness <0-5>", "Set readiness score", parseReadiness)
     .option("--reason <text>", "Required reason for explicit --to moves")
     .option("--no-dispatch", "Skip auto-dispatch of role packets")

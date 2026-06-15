@@ -24,6 +24,6 @@ Create and focus a new Chitking research thread.
 ## Boundaries
 
 - Only create a durable thread when the user clearly wants one.
-- Do not change maturity or readiness; humans own those checkpoints.
+- Do not change stage or readiness; humans own those checkpoints.
 - Do not edit `.chitking/config.yaml`, `.chitking/active.yaml`, or `research/<thread>/thread.md` by hand to simulate this command.
 - If `chitking new` fails because the repository is not initialized, tell the user to run `chitking init` first.
