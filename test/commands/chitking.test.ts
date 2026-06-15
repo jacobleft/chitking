@@ -337,12 +337,16 @@ project_incomplete_markers:
     const chatOutput = { parts: [{ type: "text", text: "user request" }] };
     await hooks["chat.message"]({ agent: "main" }, chatOutput);
     expect(chatOutput.parts[0].text).toContain("<chitking-breadcrumb>");
+    expect(chatOutput.parts[0].text).toContain("Thread: contact-stability");
+    expect(chatOutput.parts[0].text).toContain("Stages: [seed] → briefed");
+    expect(chatOutput.parts[0].text).toContain("→ (loop)");
     expect(chatOutput.parts[0].text).toContain(
-      "Active Chitking thread: contact-stability",
+      "Readiness: 1/5 — need ≥1 to advance to briefed ✓ ready",
     );
-    expect(chatOutput.parts[0].text).toContain("Stage: seed");
-    expect(chatOutput.parts[0].text).toContain("Maturity: nascent");
-    expect(chatOutput.parts[0].text).toContain("Readiness: 1 (human)");
+    expect(chatOutput.parts[0].text).toContain(
+      "Maturity: nascent (whole-thread quality)",
+    );
+    expect(chatOutput.parts[0].text).toContain("Next: Thread is at seed stage");
     expect(chatOutput.parts[0].text).toContain("user request");
 
     const roleChatOutput = { parts: [{ type: "text", text: "role turn" }] };

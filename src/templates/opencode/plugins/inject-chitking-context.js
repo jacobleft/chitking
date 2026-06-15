@@ -364,6 +364,37 @@ function detectFileChanges(directory, threadPath) {
   return warnings;
 }
 
+function formatStageProgression(stages, currentStage) {
+  return (
+    stages.map((s) => (s === currentStage ? `[${s}]` : s)).join(" → ") +
+    " → (loop)"
+  );
+}
+
+function formatReadinessLine(thread, config) {
+  const stages = config.stages || [];
+  const stageIndex = stages.indexOf(thread.stage);
+  const readiness =
+    typeof thread.readiness === "number"
+      ? thread.readiness
+      : Number(thread.readiness);
+
+  if (stageIndex === -1 || stages.length === 0) {
+    return `Readiness: ${readiness}/5`;
+  }
+
+  const isFinalStage = stageIndex === stages.length - 1;
+  const nextStage = isFinalStage ? stages[0] : stages[stageIndex + 1];
+  const threshold = config.stage_advancement?.[thread.stage] ?? 0;
+
+  if (isFinalStage) {
+    return `Readiness: ${readiness}/5 — ready to loop back to ${nextStage} ✓`;
+  }
+
+  const isReady = readiness >= threshold;
+  return `Readiness: ${readiness}/5 — need ≥${threshold} to advance to ${nextStage} ${isReady ? "✓ ready" : "✗ not ready"}`;
+}
+
 function buildActiveDirective(directory) {
   const state = loadChitkingState(directory);
   if (state.missing) {
@@ -374,8 +405,11 @@ function buildActiveDirective(directory) {
 
   const sections = [
     "<chitking-breadcrumb>",
-    `Active Chitking thread: ${state.activeThread}`,
-    `Stage: ${state.thread.stage} | Maturity: ${state.thread.maturity} | Readiness: ${state.thread.readiness} (${state.thread.readiness_source || "unknown source"})`,
+    `Thread: ${state.activeThread}`,
+    "",
+    `Stages: ${formatStageProgression(state.config.stages || [], state.thread.stage)}`,
+    formatReadinessLine(state.thread, state.config),
+    `Maturity: ${state.thread.maturity} (whole-thread quality)`,
     "",
   ];
 
@@ -384,7 +418,7 @@ function buildActiveDirective(directory) {
       ? null
       : STAGE_DIRECTIVES[state.thread.stage];
   if (directiveText) {
-    sections.push(directiveText, "");
+    sections.push(`Next: ${directiveText}`, "");
   }
 
   if (warnings.length > 0) {
@@ -392,7 +426,7 @@ function buildActiveDirective(directory) {
   }
 
   sections.push(
-    `Safety: humans own stage/readiness/maturity; read research/project.md before ${state.threadPath}; use chitking assess to evaluate progress.`,
+    "Safety: hash-check before writing to thread.md; humans own stage/readiness/maturity transitions.",
     "</chitking-breadcrumb>",
   );
 
