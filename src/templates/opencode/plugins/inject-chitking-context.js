@@ -7,268 +7,455 @@
  * Chitking role-agent Task calls and lightweight main-chat breadcrumbs.
  */
 
-import { existsSync, readFileSync } from "fs"
-import { join } from "path"
+import { existsSync, readFileSync } from "fs";
+import { join } from "path";
 
-const CHITKING_MARKER = "<!-- chitking-context-injected -->"
+const CHITKING_MARKER = "<!-- chitking-context-injected -->";
+
+// Module-level, per-session file hash cache for change detection between turns.
+const fileHashCache = new Map();
+
+const STAGE_DIRECTIVES = {
+  seed: "Thread is at seed stage. Read research/project.md, then proactively draft starter content for each empty section (Theory Brief, Current Claim, Capability Gap, Verification Obligations, Next Safe Actions). Present drafts conversationally; ask the user which to accept before writing to thread.md. Suggest running chitking assess to check readiness to advance.",
+  briefed:
+    "Thread has a theory brief. Review it for clarity and gaps. Suggest refinements to the Current Claim and Capability Gap sections. Suggest running chitking assess to check readiness to advance.",
+  "gap-identified":
+    "Thread has an identified capability gap. Suggest verification approaches and help draft Verification Obligations. Suggest running chitking assess to check readiness to advance.",
+  specified:
+    "Thread has verification obligations specified. Review them for completeness and suggest protocol improvements. Suggest running chitking assess to check readiness to advance.",
+  "verification-planned":
+    "Thread has a verification protocol. Suggest implementation approaches for the next safe action. Suggest running chitking assess to check readiness to advance.",
+  "implementation-ready":
+    "Thread is ready for implementation. Help execute the approved next safe action. Record evidence with chitking record --type evidence. Suggest running chitking assess to check readiness to advance.",
+  "evidence-recorded":
+    "Thread has recorded evidence. Analyze the evidence against verification obligations. Suggest synthesis directions or additional experiments. Suggest running chitking assess to check readiness to advance.",
+  "synthesis-ready":
+    "Thread is ready for synthesis. Draft synthesis conclusions from recorded evidence and failed paths. Then guide the user to choose: chitking archive (conclude), chitking new <title> (branch), or chitking iterate <title> (supersede with new cycle).",
+};
 
 function readText(filePath) {
   try {
-    return existsSync(filePath) ? readFileSync(filePath, "utf-8") : null
+    return existsSync(filePath) ? readFileSync(filePath, "utf-8") : null;
   } catch {
-    return null
+    return null;
   }
 }
 
 function isChitkingRepo(directory) {
-  return existsSync(join(directory, ".chitking")) && existsSync(join(directory, "research", "project.md"))
+  return (
+    existsSync(join(directory, ".chitking")) &&
+    existsSync(join(directory, "research", "project.md"))
+  );
 }
 
 function parseScalar(value) {
-  const trimmed = String(value || "").trim()
-  if (trimmed === "null" || trimmed === "") return null
-  if (trimmed === "true") return true
-  if (trimmed === "false") return false
-  if (/^-?\d+$/.test(trimmed)) return Number(trimmed)
-  return trimmed.replace(/^['"]|['"]$/g, "")
+  const trimmed = String(value || "").trim();
+  if (trimmed === "null" || trimmed === "") return null;
+  if (trimmed === "true") return true;
+  if (trimmed === "false") return false;
+  if (/^-?\d+$/.test(trimmed)) return Number(trimmed);
+  return trimmed.replace(/^['"]|['"]$/g, "");
 }
 
 function parseSimpleYamlMap(content) {
-  const result = {}
+  const result = {};
   for (const line of String(content || "").split(/\r?\n/)) {
-    const match = /^(\w[\w_-]*):\s*(.*?)\s*$/.exec(line)
-    if (match) result[match[1]] = parseScalar(match[2])
+    const match = /^(\w[\w_-]*):\s*(.*?)\s*$/.exec(line);
+    if (match) result[match[1]] = parseScalar(match[2]);
   }
-  return result
+  return result;
 }
 
 function parseThreadFrontmatter(content) {
-  const match = /^---\n([\s\S]*?)\n---/.exec(String(content || "").replace(/\r\n/g, "\n"))
-  const raw = match ? parseSimpleYamlMap(match[1]) : {}
-  const result = {}
+  const match = /^---\n([\s\S]*?)\n---/.exec(
+    String(content || "").replace(/\r\n/g, "\n"),
+  );
+  const raw = match ? parseSimpleYamlMap(match[1]) : {};
+  const result = {};
   if (typeof raw.stage === "string" && raw.stage.length > 0) {
-    result.stage = raw.stage
-    result.maturity = typeof raw.maturity === "string" && raw.maturity.length > 0 ? raw.maturity : "nascent"
+    result.stage = raw.stage;
+    result.maturity =
+      typeof raw.maturity === "string" && raw.maturity.length > 0
+        ? raw.maturity
+        : "nascent";
   } else if (typeof raw.maturity === "string" && raw.maturity.length > 0) {
-    result.stage = raw.maturity
-    result.maturity = "nascent"
+    result.stage = raw.maturity;
+    result.maturity = "nascent";
   }
-  for (const key of ["thread", "title", "readiness", "readiness_source", "updated_at", "archived"]) {
-    if (Object.prototype.hasOwnProperty.call(raw, key)) result[key] = raw[key]
+  for (const key of [
+    "thread",
+    "title",
+    "readiness",
+    "readiness_source",
+    "updated_at",
+    "archived",
+  ]) {
+    if (Object.prototype.hasOwnProperty.call(raw, key)) result[key] = raw[key];
   }
-  return result
+  return result;
 }
 
 function parseConfig(content) {
-  const config = { stages: [], stage_advancement: {}, maturity_levels: [], roles: {} }
-  let section = null
-  let role = null
-  let listKey = null
+  const config = {
+    stages: [],
+    stage_advancement: {},
+    maturity_levels: [],
+    roles: {},
+  };
+  let section = null;
+  let role = null;
+  let listKey = null;
 
   for (const rawLine of String(content || "").split(/\r?\n/)) {
-    const line = rawLine.replace(/\t/g, "  ")
-    const trimmed = line.trim()
-    if (!trimmed || trimmed.startsWith("#")) continue
+    const line = rawLine.replace(/\t/g, "  ");
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
 
     if (/^stages:\s*$/.test(trimmed) || /^maturity_ladder:\s*$/.test(trimmed)) {
-      section = "stages"
-      role = null
-      listKey = null
-      continue
+      section = "stages";
+      role = null;
+      listKey = null;
+      continue;
     }
-    if (/^stage_advancement:\s*$/.test(trimmed) || /^readiness_thresholds:\s*$/.test(trimmed)) {
-      section = "stage_advancement"
-      role = null
-      listKey = null
-      continue
+    if (
+      /^stage_advancement:\s*$/.test(trimmed) ||
+      /^readiness_thresholds:\s*$/.test(trimmed)
+    ) {
+      section = "stage_advancement";
+      role = null;
+      listKey = null;
+      continue;
     }
     if (/^maturity_levels:\s*$/.test(trimmed)) {
-      section = "maturity_levels"
-      role = null
-      listKey = null
-      continue
+      section = "maturity_levels";
+      role = null;
+      listKey = null;
+      continue;
     }
     if (/^roles:\s*$/.test(trimmed)) {
-      section = "roles"
-      role = null
-      listKey = null
-      continue
+      section = "roles";
+      role = null;
+      listKey = null;
+      continue;
     }
     if (section === "stages" && /^-\s+/.test(trimmed)) {
-      config.stages.push(parseScalar(trimmed.slice(2)))
-      continue
+      config.stages.push(parseScalar(trimmed.slice(2)));
+      continue;
     }
     if (section === "maturity_levels" && /^-\s+/.test(trimmed)) {
-      config.maturity_levels.push(parseScalar(trimmed.slice(2)))
-      continue
+      config.maturity_levels.push(parseScalar(trimmed.slice(2)));
+      continue;
     }
     if (section === "stage_advancement" || section === "readiness_thresholds") {
-      const advanceMatch = /^(\w[\w_-]*):\s*(.*?)\s*$/.exec(trimmed)
+      const advanceMatch = /^(\w[\w_-]*):\s*(.*?)\s*$/.exec(trimmed);
       if (advanceMatch) {
-        config.stage_advancement[advanceMatch[1]] = parseScalar(advanceMatch[2])
-        continue
+        config.stage_advancement[advanceMatch[1]] = parseScalar(
+          advanceMatch[2],
+        );
+        continue;
       }
     }
-    if (section !== "roles") continue
+    if (section !== "roles") continue;
 
-    const roleMatch = /^\s{2}([A-Za-z0-9_-]+):\s*$/.exec(line)
+    const roleMatch = /^\s{2}([A-Za-z0-9_-]+):\s*$/.exec(line);
     if (roleMatch) {
-      role = roleMatch[1]
-      config.roles[role] = { warnings: [], prompt: { stop_conditions: [] } }
-      listKey = null
-      continue
+      role = roleMatch[1];
+      config.roles[role] = { warnings: [], prompt: { stop_conditions: [] } };
+      listKey = null;
+      continue;
     }
-    if (!role) continue
-    const currentRole = config.roles[role]
-    const scalarMatch = /^\s{4}(min_stage|min_maturity|min_readiness):\s*(.*?)\s*$/.exec(line)
+    if (!role) continue;
+    const currentRole = config.roles[role];
+    const scalarMatch =
+      /^\s{4}(min_stage|min_maturity|min_readiness):\s*(.*?)\s*$/.exec(line);
     if (scalarMatch) {
-      const key = scalarMatch[1] === "min_maturity" ? "min_stage" : scalarMatch[1]
-      currentRole[key] = parseScalar(scalarMatch[2])
-      listKey = null
-      continue
+      const key =
+        scalarMatch[1] === "min_maturity" ? "min_stage" : scalarMatch[1];
+      currentRole[key] = parseScalar(scalarMatch[2]);
+      listKey = null;
+      continue;
     }
     if (/^\s{4}warnings:\s*$/.test(line)) {
-      listKey = "warnings"
-      continue
+      listKey = "warnings";
+      continue;
     }
     if (/^\s{4}prompt:\s*$/.test(line)) {
-      listKey = null
-      continue
+      listKey = null;
+      continue;
     }
-    const objectiveMatch = /^\s{6}objective:\s*(.*?)\s*$/.exec(line)
+    const objectiveMatch = /^\s{6}objective:\s*(.*?)\s*$/.exec(line);
     if (objectiveMatch) {
-      currentRole.prompt.objective = parseScalar(objectiveMatch[1])
-      continue
+      currentRole.prompt.objective = parseScalar(objectiveMatch[1]);
+      continue;
     }
     if (/^\s{6}stop_conditions:\s*$/.test(line)) {
-      listKey = "stop_conditions"
-      continue
+      listKey = "stop_conditions";
+      continue;
     }
-    const listMatch = /^\s{4,8}-\s+(.*?)\s*$/.exec(line)
+    const listMatch = /^\s{4,8}-\s+(.*?)\s*$/.exec(line);
     if (listMatch && listKey === "warnings") {
-      currentRole.warnings.push(parseScalar(listMatch[1]))
-      continue
+      currentRole.warnings.push(parseScalar(listMatch[1]));
+      continue;
     }
     if (listMatch && listKey === "stop_conditions") {
-      currentRole.prompt.stop_conditions.push(parseScalar(listMatch[1]))
+      currentRole.prompt.stop_conditions.push(parseScalar(listMatch[1]));
     }
   }
 
-  return config
+  return config;
 }
 
 function roleNameFromTaskArgs(args) {
-  const candidates = [args?.subagent_type, args?.subagentType, args?.agent, args?.agent_name, args?.name]
+  const candidates = [
+    args?.subagent_type,
+    args?.subagentType,
+    args?.agent,
+    args?.agent_name,
+    args?.name,
+  ];
   for (const candidate of candidates) {
-    if (typeof candidate !== "string") continue
-    const match = /^chitking-([A-Za-z0-9_-]+)$/.exec(candidate.trim())
-    if (match) return match[1]
+    if (typeof candidate !== "string") continue;
+    const match = /^chitking-([A-Za-z0-9_-]+)$/.exec(candidate.trim());
+    if (match) return match[1];
   }
-  return null
+  return null;
 }
 
 function roleFromTaskArgs(args, config) {
-  const roleName = roleNameFromTaskArgs(args)
-  if (!roleName) return null
-  return Object.prototype.hasOwnProperty.call(config.roles || {}, roleName) ? roleName : null
+  const roleName = roleNameFromTaskArgs(args);
+  if (!roleName) return null;
+  return Object.prototype.hasOwnProperty.call(config.roles || {}, roleName)
+    ? roleName
+    : null;
 }
 
 function gateWarnings(roleConfig, config, thread) {
-  const warnings = [...(roleConfig?.warnings || [])]
-  const readiness = typeof thread.readiness === "number" ? thread.readiness : Number(thread.readiness)
-  if (typeof roleConfig?.min_readiness === "number" && readiness < roleConfig.min_readiness) {
-    warnings.push(`readiness ${readiness} is below role minimum ${roleConfig.min_readiness}`)
+  const warnings = [...(roleConfig?.warnings || [])];
+  const readiness =
+    typeof thread.readiness === "number"
+      ? thread.readiness
+      : Number(thread.readiness);
+  if (
+    typeof roleConfig?.min_readiness === "number" &&
+    readiness < roleConfig.min_readiness
+  ) {
+    warnings.push(
+      `readiness ${readiness} is below role minimum ${roleConfig.min_readiness}`,
+    );
   }
   if (roleConfig?.min_stage) {
-    const ladder = Array.isArray(config.stages) && config.stages.length > 0 ? config.stages : (config.maturity_ladder || [])
-    const currentIndex = ladder.indexOf(thread.stage)
-    const requiredIndex = ladder.indexOf(roleConfig.min_stage)
-    if (currentIndex !== -1 && requiredIndex !== -1 && currentIndex < requiredIndex) {
-      warnings.push(`stage ${thread.stage} is before role minimum ${roleConfig.min_stage}`)
+    const ladder =
+      Array.isArray(config.stages) && config.stages.length > 0
+        ? config.stages
+        : config.maturity_ladder || [];
+    const currentIndex = ladder.indexOf(thread.stage);
+    const requiredIndex = ladder.indexOf(roleConfig.min_stage);
+    if (
+      currentIndex !== -1 &&
+      requiredIndex !== -1 &&
+      currentIndex < requiredIndex
+    ) {
+      warnings.push(
+        `stage ${thread.stage} is before role minimum ${roleConfig.min_stage}`,
+      );
     }
   }
-  return warnings
+  return warnings;
 }
 
 function loadChitkingState(directory, role = null) {
-  const activePath = join(directory, ".chitking", "active.yaml")
-  const configPath = join(directory, ".chitking", "config.yaml")
-  const projectPath = "research/project.md"
-  const active = parseSimpleYamlMap(readText(activePath) || "")
-  const config = parseConfig(readText(configPath) || "")
-  const activeThread = typeof active.active_thread === "string" ? active.active_thread : null
+  const activePath = join(directory, ".chitking", "active.yaml");
+  const configPath = join(directory, ".chitking", "config.yaml");
+  const projectPath = "research/project.md";
+  const active = parseSimpleYamlMap(readText(activePath) || "");
+  const config = parseConfig(readText(configPath) || "");
+  const activeThread =
+    typeof active.active_thread === "string" ? active.active_thread : null;
 
   if (!activeThread) {
-    return { activeThread: null, config, projectPath, missing: "No active Chitking thread. Run chitking new <title> or chitking focus <thread>." }
+    return {
+      activeThread: null,
+      config,
+      projectPath,
+      missing:
+        "No active Chitking thread. Run chitking new <title> or chitking focus <thread>.",
+    };
   }
 
-  const threadPath = `research/${activeThread}/thread.md`
-  const threadText = readText(join(directory, threadPath))
+  const threadPath = `research/${activeThread}/thread.md`;
+  const threadText = readText(join(directory, threadPath));
   if (!threadText) {
-    return { activeThread, config, projectPath, threadPath, missing: `Active Chitking thread file is missing: ${threadPath}` }
+    return {
+      activeThread,
+      config,
+      projectPath,
+      threadPath,
+      missing: `Active Chitking thread file is missing: ${threadPath}`,
+    };
   }
 
-  const thread = parseThreadFrontmatter(threadText)
+  const thread = parseThreadFrontmatter(threadText);
   if (thread.archived === true) {
-    return { activeThread, config, projectPath, threadPath, missing: `Active Chitking thread is archived: ${activeThread}. Run chitking restore ${activeThread} or chitking focus <thread>.` }
+    return {
+      activeThread,
+      config,
+      projectPath,
+      threadPath,
+      missing: `Active Chitking thread is archived: ${activeThread}. Run chitking restore ${activeThread} or chitking focus <thread>.`,
+    };
   }
-  const packetPath = role ? `research/${activeThread}/context/${role}.yaml` : null
-  const packetExists = packetPath ? existsSync(join(directory, packetPath)) : false
-  const roleConfig = role ? config.roles[role] || { warnings: [], prompt: { stop_conditions: [] } } : null
-  const warnings = role ? gateWarnings(roleConfig, config, thread) : []
+  const packetPath = role
+    ? `research/${activeThread}/context/${role}.yaml`
+    : null;
+  const packetExists = packetPath
+    ? existsSync(join(directory, packetPath))
+    : false;
+  const roleConfig = role
+    ? config.roles[role] || { warnings: [], prompt: { stop_conditions: [] } }
+    : null;
+  const warnings = role ? gateWarnings(roleConfig, config, thread) : [];
 
-  return { activeThread, config, projectPath, threadPath, thread, packetPath, packetExists, roleConfig, warnings }
+  return {
+    activeThread,
+    config,
+    projectPath,
+    threadPath,
+    thread,
+    packetPath,
+    packetExists,
+    roleConfig,
+    warnings,
+  };
+}
+
+function computeHash(content) {
+  return `${content.length}:${content.slice(0, 64)}:${content.slice(-64)}`;
+}
+
+function trackFile(absPath, changedMessage, warnings) {
+  const content = readText(absPath);
+  if (content === null) return;
+  const hash = computeHash(content);
+  const prev = fileHashCache.get(absPath);
+  if (prev !== undefined && prev !== hash) {
+    warnings.push(changedMessage);
+  }
+  fileHashCache.set(absPath, hash);
+}
+
+function detectFileChanges(directory, threadPath) {
+  const warnings = [];
+  // thread.md path depends on the active thread; project.md and active.yaml are fixed.
+  trackFile(
+    join(directory, threadPath),
+    "⚠️ thread.md changed since last turn — re-read before acting.",
+    warnings,
+  );
+  trackFile(
+    join(directory, "research", "project.md"),
+    "⚠️ project.md changed since last turn — re-read before acting.",
+    warnings,
+  );
+  trackFile(
+    join(directory, ".chitking", "active.yaml"),
+    "⚠️ active.yaml changed — active thread may differ from cached.",
+    warnings,
+  );
+  return warnings;
+}
+
+function buildActiveDirective(directory) {
+  const state = loadChitkingState(directory);
+  if (state.missing) {
+    return `<chitking-breadcrumb>\nChitking repo detected. ${state.missing}\nSafe next action: inspect research/project.md, then create/focus a thread.\n</chitking-breadcrumb>`;
+  }
+
+  const warnings = detectFileChanges(directory, state.threadPath);
+
+  const sections = [
+    "<chitking-breadcrumb>",
+    `Active Chitking thread: ${state.activeThread}`,
+    `Stage: ${state.thread.stage} | Maturity: ${state.thread.maturity} | Readiness: ${state.thread.readiness} (${state.thread.readiness_source || "unknown source"})`,
+    "",
+  ];
+
+  const directiveText =
+    process.env.CHITKING_PROACTIVE === "0"
+      ? null
+      : STAGE_DIRECTIVES[state.thread.stage];
+  if (directiveText) {
+    sections.push(directiveText, "");
+  }
+
+  if (warnings.length > 0) {
+    sections.push(...warnings, "");
+  }
+
+  sections.push(
+    `Safety: humans own stage/readiness/maturity; read research/project.md before ${state.threadPath}; use chitking assess to evaluate progress.`,
+    "</chitking-breadcrumb>",
+  );
+
+  return sections.join("\n");
 }
 
 function buildRoleContext(directory, role) {
-  const state = loadChitkingState(directory, role)
+  const state = loadChitkingState(directory, role);
   if (state.missing) {
-    return `${CHITKING_MARKER}\n<chitking-role-context>\nRole: ${role}\nStatus: ${state.missing}\nBoundary: injector is read-only and did not change Chitking state.\n</chitking-role-context>`
+    return `${CHITKING_MARKER}\n<chitking-role-context>\nRole: ${role}\nStatus: ${state.missing}\nBoundary: injector is read-only and did not change Chitking state.\n</chitking-role-context>`;
   }
 
-  const warningLines = state.warnings.length > 0 ? state.warnings.map(w => `- ${w}`).join("\n") : "- None detected."
+  const warningLines =
+    state.warnings.length > 0
+      ? state.warnings.map((w) => `- ${w}`).join("\n")
+      : "- None detected.";
   const packetLine = state.packetExists
     ? `Packet: ${state.packetPath}`
-    : `Packet: not generated; run chitking dispatch --role ${role} if a durable packet is needed.`
-  const objective = state.roleConfig?.prompt?.objective ? `Objective: ${state.roleConfig.prompt.objective}\n` : ""
+    : `Packet: not generated; run chitking dispatch --role ${role} if a durable packet is needed.`;
+  const objective = state.roleConfig?.prompt?.objective
+    ? `Objective: ${state.roleConfig.prompt.objective}\n`
+    : "";
 
-  return `${CHITKING_MARKER}\n<chitking-role-context>\nRole: ${role}\nActive thread: ${state.activeThread}\nStage: ${state.thread.stage}\nMaturity: ${state.thread.maturity}\nReadiness: ${state.thread.readiness} (${state.thread.readiness_source || "unknown source"})\nProject file: ${state.projectPath}\nThread file: ${state.threadPath}\n${packetLine}\n${objective}\nRole gate warnings:\n${warningLines}\nSafety boundaries:\n- Humans own stage/readiness; recommend changes, do not apply them.\n- Injector is read-only; it did not mutate thread.md, active.yaml, config.yaml, or packets.\n- Read research/project.md before research/<thread>/thread.md.\n- Treat generated packets as cache, not source of truth.\n- Dreamer must not create implementation tasks or hand work directly to build/Executor.\n</chitking-role-context>`
-}
-
-function buildMainBreadcrumb(directory) {
-  const state = loadChitkingState(directory)
-  if (state.missing) {
-    return `<chitking-breadcrumb>\nChitking repo detected. ${state.missing}\nSafe next action: inspect research/project.md, then create/focus a thread.\n</chitking-breadcrumb>`
-  }
-  return `<chitking-breadcrumb>\nActive Chitking thread: ${state.activeThread}\nStage: ${state.thread.stage}\nMaturity: ${state.thread.maturity}\nReadiness: ${state.thread.readiness} (${state.thread.readiness_source || "unknown source"})\nSafe reminders: humans own stage/readiness; read research/project.md before ${state.threadPath}; use chitking orient or chitking dispatch [--role <role>] before role fan-out.\n</chitking-breadcrumb>`
+  return `${CHITKING_MARKER}\n<chitking-role-context>\nRole: ${role}\nActive thread: ${state.activeThread}\nStage: ${state.thread.stage}\nMaturity: ${state.thread.maturity}\nReadiness: ${state.thread.readiness} (${state.thread.readiness_source || "unknown source"})\nProject file: ${state.projectPath}\nThread file: ${state.threadPath}\n${packetLine}\n${objective}\nRole gate warnings:\n${warningLines}\nSafety boundaries:\n- Humans own stage/readiness; recommend changes, do not apply them.\n- Injector is read-only; it did not mutate thread.md, active.yaml, config.yaml, or packets.\n- Read research/project.md before research/<thread>/thread.md.\n- Treat generated packets as cache, not source of truth.\n- Dreamer must not create implementation tasks or hand work directly to build/Executor.\n</chitking-role-context>`;
 }
 
 function prependTextPart(output, text) {
-  const parts = output?.parts || []
-  output.parts = parts
-  const textPart = parts.find(p => p.type === "text" && typeof p.text === "string")
+  const parts = output?.parts || [];
+  output.parts = parts;
+  const textPart = parts.find(
+    (p) => p.type === "text" && typeof p.text === "string",
+  );
   if (textPart) {
-    textPart.text = `${text}\n\n${textPart.text}`
+    textPart.text = `${text}\n\n${textPart.text}`;
   } else {
-    parts.unshift({ type: "text", text })
+    parts.unshift({ type: "text", text });
   }
 }
+
+export { computeHash, STAGE_DIRECTIVES, buildActiveDirective };
 
 export default async ({ directory }) => {
   return {
     "tool.execute.before": async (input, output) => {
       try {
-        if (process.env.TRELLIS_HOOKS === "0" || process.env.TRELLIS_DISABLE_HOOKS === "1") return
-        if (!isChitkingRepo(directory)) return
-        if ((input?.tool || "").toLowerCase() !== "task") return
-        const args = output?.args
-        if (!args || typeof args !== "object") return
-        const config = parseConfig(readText(join(directory, ".chitking", "config.yaml")) || "")
-        const role = roleFromTaskArgs(args, config)
-        if (!role) return
-        const originalPrompt = typeof args.prompt === "string" ? args.prompt : ""
-        if (originalPrompt.includes(CHITKING_MARKER)) return
-        args.prompt = `${buildRoleContext(directory, role)}\n\n---\n\n${originalPrompt}`
+        if (
+          process.env.TRELLIS_HOOKS === "0" ||
+          process.env.TRELLIS_DISABLE_HOOKS === "1"
+        )
+          return;
+        if (!isChitkingRepo(directory)) return;
+        if ((input?.tool || "").toLowerCase() !== "task") return;
+        const args = output?.args;
+        if (!args || typeof args !== "object") return;
+        const config = parseConfig(
+          readText(join(directory, ".chitking", "config.yaml")) || "",
+        );
+        const role = roleFromTaskArgs(args, config);
+        if (!role) return;
+        const originalPrompt =
+          typeof args.prompt === "string" ? args.prompt : "";
+        if (originalPrompt.includes(CHITKING_MARKER)) return;
+        args.prompt = `${buildRoleContext(directory, role)}\n\n---\n\n${originalPrompt}`;
       } catch {
         // Best-effort context only; never block OpenCode tool execution.
       }
@@ -276,14 +463,22 @@ export default async ({ directory }) => {
 
     "chat.message": async (input, output) => {
       try {
-        if (process.env.TRELLIS_HOOKS === "0" || process.env.TRELLIS_DISABLE_HOOKS === "1") return
-        if (process.env.OPENCODE_NON_INTERACTIVE === "1") return
-        if (!isChitkingRepo(directory)) return
-        if (typeof input?.agent === "string" && /^chitking-[A-Za-z0-9_-]+$/.test(input.agent)) return
-        prependTextPart(output, buildMainBreadcrumb(directory))
+        if (
+          process.env.TRELLIS_HOOKS === "0" ||
+          process.env.TRELLIS_DISABLE_HOOKS === "1"
+        )
+          return;
+        if (process.env.OPENCODE_NON_INTERACTIVE === "1") return;
+        if (!isChitkingRepo(directory)) return;
+        if (
+          typeof input?.agent === "string" &&
+          /^chitking-[A-Za-z0-9_-]+$/.test(input.agent)
+        )
+          return;
+        prependTextPart(output, buildActiveDirective(directory));
       } catch {
         // Best-effort breadcrumb only; never block chat turns.
       }
     },
-  }
-}
+  };
+};

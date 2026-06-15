@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend spec overview — verify plugin changes follow scaffold patterns"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Quality bar — plugin is template code, verify test coverage and generated output"}
+{"file": ".trellis/spec/guides/chitking-product-doctrine.md", "reason": "Product doctrine — verify read-only, no silent state advancement, Chitking-native naming"}
+{"file": ".trellis/spec/frontend/hook-guidelines.md", "reason": "Hook guidelines — verify plugin hook boundaries, read-only, best-effort patterns"}
