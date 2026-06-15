@@ -37,6 +37,7 @@ Humans own research direction, stage, maturity, and readiness checkpoints. Agent
 - `chitking orient` reads the active thread, source files, config, generated packets, and Git activity to summarize stage, maturity, readiness, blockers, stale packets, risky roles, and next safe actions. Use it to orient; do not treat it as permission to mutate files.
 - `chitking assess [thread]` evaluates structural criteria against config and prints readiness-to-advance and maturity recommendations. It is read-only and recommend-only; humans must apply any changes with `chitking step` or by editing frontmatter.
 - `chitking step` changes stage/readiness and records the reason in `thread.md`. Because humans own stage/readiness, only run or emulate this command when explicitly instructed by the user or calling workflow.
+- `chitking mature --to <level> --reason "..."` updates whole-thread maturity and records the reason in `thread.md`. Because humans own maturity transitions, only run or emulate this command when explicitly instructed by the user or calling workflow.
 - `chitking dispatch [--role <role>]` regenerates `research/<thread>/context/<role>.yaml` for a role (or all roles when `--role` is omitted). Packets are generated cache and should not replace reading `research/project.md` and `research/<thread>/thread.md`.
 - `chitking record --type <type> --text "..."` appends factual output to the active thread. Use it only when the user or calling workflow asks you to record evidence, failures, decisions, or revisions.
 

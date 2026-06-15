@@ -8,6 +8,7 @@ export {
   chitkingInit,
   chitkingIterate,
   chitkingList,
+  chitkingMature,
   chitkingNew,
   chitkingOrient,
   chitkingRecord,
@@ -23,11 +24,10 @@ export {
   type ConfirmationOptions,
   type DispatchOptions,
   type FocusOptions,
+  type MatureOptions,
   type NewThreadOptions,
   type RecordOptions,
   type RecordType,
   type StepOptions,
 } from "./commands/chitking.js";
-export {
-  createChitkingProgram,
-} from "./cli/chitking.js";
+export { createChitkingProgram } from "./cli/chitking.js";

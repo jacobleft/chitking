@@ -36,6 +36,8 @@ const CK_COMMANDS = [
   "ck-record",
   "ck-assess",
   "ck-iterate",
+  "ck-mature",
+  "ck-step",
 ] as const;
 type CkCommand = (typeof CK_COMMANDS)[number];
 const CK_COMMAND_DESCRIPTIONS: Record<CkCommand, string> = {
@@ -57,16 +59,15 @@ const CK_COMMAND_DESCRIPTIONS: Record<CkCommand, string> = {
     "Delete a Chitking research thread directory only after explicit user confirmation.",
   "ck-orient":
     "Print the human checkpoint for the active Chitking research thread.",
-  "ck-step":
-    "Move Chitking stage/readiness only with explicit human consent.",
-  "ck-dispatch":
-    "Generate Chitking role prompt packets for the active thread.",
+  "ck-dispatch": "Generate Chitking role prompt packets for the active thread.",
   "ck-record":
     "Append factual role output to the active Chitking research thread when asked.",
   "ck-assess":
     "Heuristic content evaluation that recommends but does not apply stage/readiness changes.",
   "ck-iterate":
     "Archive the active thread and create a new thread with a predecessor link.",
+  "ck-mature": "Update whole-thread maturity only with explicit human consent.",
+  "ck-step": "Move Chitking stage/readiness only with explicit human consent.",
 };
 const OPENCODE_DIR = ".opencode";
 const OPENCODE_AGENTS_DIR = "agents";
@@ -134,6 +135,12 @@ export interface StepOptions {
   to?: string;
   readiness?: number;
   reason?: string;
+  noDispatch?: boolean;
+}
+
+export interface MatureOptions {
+  to: string;
+  reason: string;
   noDispatch?: boolean;
 }
 
@@ -311,7 +318,10 @@ function getOpenCodePluginsDir(cwd: string): string {
 }
 
 function getOpenCodeChitkingContextPluginPath(cwd: string): string {
-  return path.join(getOpenCodePluginsDir(cwd), OPENCODE_CHITKING_CONTEXT_PLUGIN);
+  return path.join(
+    getOpenCodePluginsDir(cwd),
+    OPENCODE_CHITKING_CONTEXT_PLUGIN,
+  );
 }
 
 function getOpenCodeChitkingWorkflowSkillDir(cwd: string): string {
@@ -379,8 +389,7 @@ function isOrientHousekeepingStatus(statusLine: string): boolean {
   const paths = statusLinePaths(statusLine);
   return paths.every(
     (repoPath) =>
-      repoPath === ".chitking/active.yaml" ||
-      isGeneratedContextPath(repoPath),
+      repoPath === ".chitking/active.yaml" || isGeneratedContextPath(repoPath),
   );
 }
 
@@ -389,7 +398,10 @@ function getChitkingRuntimeTemplateFilePath(...segments: string[]): string {
 }
 
 function defaultConfigTemplateContent(): string {
-  return fs.readFileSync(getChitkingRuntimeTemplateFilePath(CHITKING_CONFIG_TEMPLATE), "utf-8");
+  return fs.readFileSync(
+    getChitkingRuntimeTemplateFilePath(CHITKING_CONFIG_TEMPLATE),
+    "utf-8",
+  );
 }
 
 function commandTemplateContent(command: CkCommand): string {
@@ -399,7 +411,10 @@ function commandTemplateContent(command: CkCommand): string {
   );
 }
 
-function openCodeCommandContent(command: CkCommand, commandContent: string): string {
+function openCodeCommandContent(
+  command: CkCommand,
+  commandContent: string,
+): string {
   return `---
 description: ${CK_COMMAND_DESCRIPTIONS[command]}
 ---
@@ -407,7 +422,10 @@ description: ${CK_COMMAND_DESCRIPTIONS[command]}
 ${commandContent}`;
 }
 
-function codexCommandSkillContent(command: CkCommand, commandContent: string): string {
+function codexCommandSkillContent(
+  command: CkCommand,
+  commandContent: string,
+): string {
   return `---
 name: ${command}
 description: ${CK_COMMAND_DESCRIPTIONS[command]}
@@ -541,7 +559,9 @@ function parseAssessCriteria(raw: unknown): Record<string, AssessCriterion[]> {
 function defaultConfig(): ResearchConfig {
   const raw = parse(defaultConfigTemplateContent()) as unknown;
   if (!isRecord(raw)) {
-    throw new Error("Chitking default config template must contain a YAML mapping");
+    throw new Error(
+      "Chitking default config template must contain a YAML mapping",
+    );
   }
   return normalizeConfig(raw, undefined);
 }
@@ -627,12 +647,17 @@ function opencodeAdapterContent(
 
 function chitkingWorkflowSkillContent(): string {
   return fs.readFileSync(
-    getChitkingRuntimeTemplateFilePath(SKILLS_DIR, `${CHITKING_WORKFLOW_SKILL}.md`),
+    getChitkingRuntimeTemplateFilePath(
+      SKILLS_DIR,
+      `${CHITKING_WORKFLOW_SKILL}.md`,
+    ),
     "utf-8",
   );
 }
 
-function opencodeChitkingWorkflowSkillContent(canonicalContent: string): string {
+function opencodeChitkingWorkflowSkillContent(
+  canonicalContent: string,
+): string {
   return `---
 name: chitking-workflow
 description: Trigger when working in a Chitking repo, using chitking commands, interpreting Chitking workflow/state files, or handling research threads, stage, maturity, readiness, roles, or generated packets.
@@ -885,10 +910,16 @@ function validateSlug(slug: string): string {
   return normalized;
 }
 
-function readStageAndMaturity(raw: Record<string, unknown>): { stage: string; maturity: string } {
-  const stageValue = typeof raw.stage === "string" && raw.stage.length > 0 ? raw.stage : null;
+function readStageAndMaturity(raw: Record<string, unknown>): {
+  stage: string;
+  maturity: string;
+} {
+  const stageValue =
+    typeof raw.stage === "string" && raw.stage.length > 0 ? raw.stage : null;
   const legacyMaturityValue =
-    typeof raw.maturity === "string" && raw.maturity.length > 0 ? raw.maturity : null;
+    typeof raw.maturity === "string" && raw.maturity.length > 0
+      ? raw.maturity
+      : null;
 
   if (stageValue) {
     const maturityValue = legacyMaturityValue ?? "nascent";
@@ -994,7 +1025,10 @@ function requireThreadNotArchived(slug: string, thread: ParsedThread): void {
   }
 }
 
-function listThreadSummaries(cwd: string, includeArchived = false): ThreadSummary[] {
+function listThreadSummaries(
+  cwd: string,
+  includeArchived = false,
+): ThreadSummary[] {
   const researchDir = getResearchDir(cwd);
   if (!fs.existsSync(researchDir)) {
     return [];
@@ -1285,7 +1319,9 @@ export function chitkingNew(
   cwd: string = process.cwd(),
 ): string {
   if (!fs.existsSync(getProjectPath(cwd))) {
-    throw new Error("research/project.md is required. Run chitking init first.");
+    throw new Error(
+      "research/project.md is required. Run chitking init first.",
+    );
   }
   const config = loadConfig(cwd);
   const slug = options.slug ? validateSlug(options.slug) : slugifyTitle(title);
@@ -1361,7 +1397,9 @@ export function chitkingFocus(
   cwd: string = process.cwd(),
 ): string {
   if (!thread) {
-    throw new Error("chitking focus requires <thread>. Use chitking show or chitking list.");
+    throw new Error(
+      "chitking focus requires <thread>. Use chitking show or chitking list.",
+    );
   }
   const config = loadConfig(cwd);
   const slug = validateSlug(thread);
@@ -1564,7 +1602,9 @@ export function chitkingAssess(
     for (const criterion of stageCriteria) {
       const result = evaluateCriterion(body, criterion);
       const sectionName = criterion.section ?? "Decisions & Maturity History";
-      lines.push(`  ${result.passed ? "✓" : "✗"} ${sectionName}: ${result.detail}`);
+      lines.push(
+        `  ${result.passed ? "✓" : "✗"} ${sectionName}: ${result.detail}`,
+      );
       if (result.passed) {
         passedCount++;
       } else {
@@ -1656,7 +1696,9 @@ export function chitkingIterate(
   cwd: string = process.cwd(),
 ): string {
   if (!fs.existsSync(getProjectPath(cwd))) {
-    throw new Error("research/project.md is required. Run chitking init first.");
+    throw new Error(
+      "research/project.md is required. Run chitking init first.",
+    );
   }
   const config = loadConfig(cwd);
   const oldSlug = resolveActiveThread(cwd);
@@ -1720,8 +1762,7 @@ export function chitkingStep(
   }
 
   let targetStage = options.to;
-  const isLoopBack =
-    !targetStage && stageIndex === config.stages.length - 1;
+  const isLoopBack = !targetStage && stageIndex === config.stages.length - 1;
   const readiness =
     options.readiness !== undefined && !isLoopBack
       ? validateReadiness(options.readiness)
@@ -1734,9 +1775,7 @@ export function chitkingStep(
       throw new Error(`Unknown stage: ${targetStage}`);
     }
   } else {
-    targetStage = isLoopBack
-      ? config.stages[0]
-      : config.stages[stageIndex + 1];
+    targetStage = isLoopBack ? config.stages[0] : config.stages[stageIndex + 1];
   }
 
   const previousStage = thread.frontmatter.stage;
@@ -1760,6 +1799,39 @@ export function chitkingStep(
   );
   writeThread(cwd, slug, thread);
   console.log(`Updated ${slug}: ${previousStage} → ${targetStage}`);
+  if (!options.noDispatch) {
+    autoDispatch(cwd, slug, config);
+  }
+}
+
+export function chitkingMature(
+  options: MatureOptions,
+  cwd: string = process.cwd(),
+): void {
+  const config = loadConfig(cwd);
+  const slug = resolveActiveThread(cwd);
+  const thread = readThread(cwd, slug);
+
+  if (!options.reason || options.reason.trim().length === 0) {
+    throw new Error("chitking mature requires --reason.");
+  }
+  if (!config.maturity_levels.includes(options.to)) {
+    throw new Error(`Unknown maturity level: ${options.to}`);
+  }
+
+  const previousMaturity = thread.frontmatter.maturity;
+  thread.frontmatter.maturity = options.to;
+  thread.frontmatter.updated_at = nowIso();
+
+  thread.body = appendToSection(
+    thread.body,
+    "Decisions & Maturity History",
+    `maturity ${previousMaturity}→${options.to}. Reason: ${options.reason.trim()}`,
+  );
+
+  writeThread(cwd, slug, thread);
+  console.log(`Maturity updated: ${slug} ${previousMaturity} → ${options.to}`);
+
   if (!options.noDispatch) {
     autoDispatch(cwd, slug, config);
   }
@@ -1799,11 +1871,7 @@ function buildRolePacket(
   return toRepoPath(cwd, packetPath);
 }
 
-function autoDispatch(
-  cwd: string,
-  slug: string,
-  config: ResearchConfig,
-): void {
+function autoDispatch(cwd: string, slug: string, config: ResearchConfig): void {
   let successCount = 0;
   const failures: string[] = [];
   for (const [roleName, role] of Object.entries(config.roles)) {

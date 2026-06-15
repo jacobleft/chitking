@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend spec overview — verify command follows patterns"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Quality bar — verify test coverage for mature + E2E lifecycle"}
+{"file": ".trellis/spec/guides/chitking-product-doctrine.md", "reason": "Product doctrine — verify maturity is human-owned, explicit command"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Cross-layer — verify CLI ↔ command ↔ frontmatter ↔ test all align"}

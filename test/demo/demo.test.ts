@@ -28,6 +28,7 @@ const EXPECTED_CK_COMMANDS = [
   "ck-orient",
   "ck-assess",
   "ck-iterate",
+  "ck-mature",
   "ck-step",
   "ck-dispatch",
   "ck-record",
@@ -87,8 +88,8 @@ function generatedAdapterPaths(root: string): string[] {
       (filePath) => path.join(".opencode", "plugins", filePath),
     ),
     path.join(".codex", "config.toml"),
-    ...listRelativeFiles(path.join(root, ".codex", "skills")).map(
-      (filePath) => path.join(".codex", "skills", filePath),
+    ...listRelativeFiles(path.join(root, ".codex", "skills")).map((filePath) =>
+      path.join(".codex", "skills", filePath),
     ),
   ].sort();
 }
@@ -120,7 +121,9 @@ describe("demo Chitking workspace", () => {
     expect(trackedExistingIgnoredDemoFiles()).toEqual([]);
     expect(readme).toContain("does not commit `.chitking/`");
     expect(readme).toContain("`research/` is user-owned research content");
-    expect(readme).toContain("does not commit generated `.opencode/` or `.codex/`");
+    expect(readme).toContain(
+      "does not commit generated `.opencode/` or `.codex/`",
+    );
     expect(contextReadme).toContain("not durable product truth");
     expect(readDemoText(".gitignore")).toContain("research/*/context/*.yaml");
     expect(readDemoText(".gitignore")).toContain(".opencode/");
@@ -170,12 +173,19 @@ describe("demo Chitking workspace", () => {
       ).toBe(true);
       expect(
         existsSync(
-          path.join(tempDir, ".opencode", "plugins", "inject-chitking-context.js"),
+          path.join(
+            tempDir,
+            ".opencode",
+            "plugins",
+            "inject-chitking-context.js",
+          ),
         ),
       ).toBe(true);
       for (const command of EXPECTED_CK_COMMANDS) {
         expect(
-          existsSync(path.join(tempDir, ".opencode", "commands", `${command}.md`)),
+          existsSync(
+            path.join(tempDir, ".opencode", "commands", `${command}.md`),
+          ),
         ).toBe(true);
       }
       expect(existsSync(path.join(tempDir, ".codex", "config.toml"))).toBe(

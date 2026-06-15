@@ -23,6 +23,7 @@ import {
   chitkingInit,
   chitkingIterate,
   chitkingList,
+  chitkingMature,
   chitkingNew,
   chitkingOrient,
   chitkingRecord,
@@ -49,6 +50,7 @@ const EXPECTED_CK_COMMANDS = [
   "ck-orient",
   "ck-assess",
   "ck-iterate",
+  "ck-mature",
   "ck-step",
   "ck-dispatch",
   "ck-record",
@@ -67,6 +69,7 @@ const CK_COMMAND_SNIPPETS: Record<ExpectedCkCommand, string> = {
   "ck-orient": "chitking orient",
   "ck-assess": "chitking assess [thread]",
   "ck-iterate": 'chitking iterate "<thread title>" [--slug <slug>]',
+  "ck-mature": 'chitking mature --to <level> --reason "<human reason>"',
   "ck-step": "chitking step",
   "ck-dispatch": "chitking dispatch [--role <role>]",
   "ck-record": "chitking record --type <type> --text",
@@ -126,6 +129,7 @@ describe("chitking command skeleton", () => {
     expect(help).toContain("orient");
     expect(help).toContain("assess");
     expect(help).toContain("iterate");
+    expect(help).toContain("mature");
     expect(help).toContain("step");
     expect(help).toContain("dispatch");
     expect(help).toContain("record");
@@ -154,20 +158,28 @@ describe("chitking command skeleton", () => {
     expect(existsSync(path.join(cwd, ".chitking", "config.yaml"))).toBe(true);
     expect(existsSync(path.join(cwd, ".chitking", "active.yaml"))).toBe(true);
     expect(existsSync(path.join(cwd, "research", "project.md"))).toBe(true);
-    expect(existsSync(path.join(cwd, ".chitking", "roles", "plan.md"))).toBe(true);
-    expect(existsSync(path.join(cwd, ".opencode", "agents", "chitking-plan.md"))).toBe(true);
+    expect(existsSync(path.join(cwd, ".chitking", "roles", "plan.md"))).toBe(
+      true,
+    );
+    expect(
+      existsSync(path.join(cwd, ".opencode", "agents", "chitking-plan.md")),
+    ).toBe(true);
     expect(readdirSync(path.join(cwd, ".opencode", "commands")).sort()).toEqual(
       EXPECTED_CK_COMMANDS.map((command) => `${command}.md`).sort(),
     );
     expect(
-      existsSync(path.join(cwd, ".opencode", "skills", "chitking-workflow", "SKILL.md")),
+      existsSync(
+        path.join(cwd, ".opencode", "skills", "chitking-workflow", "SKILL.md"),
+      ),
     ).toBe(true);
     expect(readdirSync(path.join(cwd, ".codex", "skills")).sort()).toEqual(
       [...EXPECTED_CK_COMMANDS].sort(),
     );
     expect(existsSync(path.join(cwd, ".codex", "config.toml"))).toBe(true);
     expect(
-      existsSync(path.join(cwd, ".opencode", "plugins", "inject-chitking-context.js")),
+      existsSync(
+        path.join(cwd, ".opencode", "plugins", "inject-chitking-context.js"),
+      ),
     ).toBe(true);
     for (const command of EXPECTED_CK_COMMANDS) {
       const openCodeCommand = readFileSync(
@@ -187,12 +199,18 @@ describe("chitking command skeleton", () => {
       expect(codexCommand).toContain("$ARGUMENTS");
       expect(codexCommand).toContain("## Boundaries");
     }
-    expect(readFileSync(path.join(cwd, ".opencode", "commands", "ck-step.md"), "utf-8")).toContain(
-      "Humans own stage/readiness",
-    );
-    expect(readFileSync(path.join(cwd, ".codex", "skills", "ck-delete", "SKILL.md"), "utf-8")).toContain(
-      "Do not add `--yes` unless the user clearly asked to delete",
-    );
+    expect(
+      readFileSync(
+        path.join(cwd, ".opencode", "commands", "ck-step.md"),
+        "utf-8",
+      ),
+    ).toContain("Humans own stage/readiness");
+    expect(
+      readFileSync(
+        path.join(cwd, ".codex", "skills", "ck-delete", "SKILL.md"),
+        "utf-8",
+      ),
+    ).toContain("Do not add `--yes` unless the user clearly asked to delete");
     expect(readFileSync(path.join(cwd, ".gitignore"), "utf-8")).toContain(
       "research/*/context/*.yaml",
     );
@@ -205,11 +223,33 @@ describe("chitking command skeleton", () => {
     chitkingInit(cwd);
     const rolePath = path.join(cwd, ".chitking", "roles", "plan.md");
     const agentPath = path.join(cwd, ".opencode", "agents", "chitking-plan.md");
-    const openCodeCommandPath = path.join(cwd, ".opencode", "commands", "ck-new.md");
+    const openCodeCommandPath = path.join(
+      cwd,
+      ".opencode",
+      "commands",
+      "ck-new.md",
+    );
     const codexConfigPath = path.join(cwd, ".codex", "config.toml");
-    const codexCommandPath = path.join(cwd, ".codex", "skills", "ck-new", "SKILL.md");
-    const skillPath = path.join(cwd, ".opencode", "skills", "chitking-workflow", "SKILL.md");
-    const pluginPath = path.join(cwd, ".opencode", "plugins", "inject-chitking-context.js");
+    const codexCommandPath = path.join(
+      cwd,
+      ".codex",
+      "skills",
+      "ck-new",
+      "SKILL.md",
+    );
+    const skillPath = path.join(
+      cwd,
+      ".opencode",
+      "skills",
+      "chitking-workflow",
+      "SKILL.md",
+    );
+    const pluginPath = path.join(
+      cwd,
+      ".opencode",
+      "plugins",
+      "inject-chitking-context.js",
+    );
     writeFileSync(rolePath, "custom role", "utf-8");
     writeFileSync(agentPath, "custom agent", "utf-8");
     writeFileSync(openCodeCommandPath, "custom opencode command", "utf-8");
@@ -222,9 +262,13 @@ describe("chitking command skeleton", () => {
 
     expect(readFileSync(rolePath, "utf-8")).toBe("custom role");
     expect(readFileSync(agentPath, "utf-8")).toBe("custom agent");
-    expect(readFileSync(openCodeCommandPath, "utf-8")).toBe("custom opencode command");
+    expect(readFileSync(openCodeCommandPath, "utf-8")).toBe(
+      "custom opencode command",
+    );
     expect(readFileSync(codexConfigPath, "utf-8")).toBe("custom codex config");
-    expect(readFileSync(codexCommandPath, "utf-8")).toBe("custom codex command");
+    expect(readFileSync(codexCommandPath, "utf-8")).toBe(
+      "custom codex command",
+    );
     expect(readFileSync(skillPath, "utf-8")).toBe("custom skill");
     expect(readFileSync(pluginPath, "utf-8")).toBe("custom plugin");
     expect(
@@ -290,7 +334,9 @@ project_incomplete_markers:
     const mod = (await import(
       `${pathToFileURL(pluginPath).href}?case=${Date.now()}`
     )) as {
-      default: (input: { directory: string }) => Promise<Record<string, unknown>>;
+      default: (input: {
+        directory: string;
+      }) => Promise<Record<string, unknown>>;
     };
     const hooks = (await mod.default({ directory: cwd })) as {
       "tool.execute.before": (
@@ -310,10 +356,15 @@ project_incomplete_markers:
     expect(unrelated.args.prompt).toBe("do work");
 
     const roleCall = {
-      args: { subagent_type: "chitking-build", prompt: "implement approved action" },
+      args: {
+        subagent_type: "chitking-build",
+        prompt: "implement approved action",
+      },
     };
     await hooks["tool.execute.before"]({ tool: "Task" }, roleCall);
-    expect(roleCall.args.prompt).toContain("<!-- chitking-context-injected -->");
+    expect(roleCall.args.prompt).toContain(
+      "<!-- chitking-context-injected -->",
+    );
     expect(roleCall.args.prompt).toContain("Role: build");
     expect(roleCall.args.prompt).toContain("Active thread: contact-stability");
     expect(roleCall.args.prompt).toContain("Stage: seed");
@@ -324,7 +375,9 @@ project_incomplete_markers:
       "Thread file: research/contact-stability/thread.md",
     );
     expect(roleCall.args.prompt).toContain("chitking dispatch --role build");
-    expect(roleCall.args.prompt).toContain("readiness 1 is below role minimum 4");
+    expect(roleCall.args.prompt).toContain(
+      "readiness 1 is below role minimum 4",
+    );
     expect(roleCall.args.prompt).toContain(
       "stage seed is before role minimum implementation-ready",
     );
@@ -386,12 +439,19 @@ project_incomplete_markers:
     chitkingInit(cwd);
     chitkingNew("Contact Stability", {}, cwd);
     chitkingNew("Friction Model", {}, cwd);
-    const firstThreadPath = path.join(cwd, "research", "contact-stability", "thread.md");
+    const firstThreadPath = path.join(
+      cwd,
+      "research",
+      "contact-stability",
+      "thread.md",
+    );
     const before = readText(firstThreadPath);
 
     expect(chitkingList(cwd)).toContain("friction-model — Friction Model");
     expect(chitkingShow(undefined, cwd)).toContain("Thread: friction-model");
-    expect(chitkingFocus("contact-stability", {}, cwd)).toBe("contact-stability");
+    expect(chitkingFocus("contact-stability", {}, cwd)).toBe(
+      "contact-stability",
+    );
     expect(chitkingShow(undefined, cwd)).toContain("Thread: contact-stability");
     expect(readText(firstThreadPath)).toBe(before);
   });
@@ -404,7 +464,12 @@ project_incomplete_markers:
 
     chitkingRename("contact-stability", "Contact Stability Revisited", cwd);
 
-    const threadPath = path.join(cwd, "research", "contact-stability", "thread.md");
+    const threadPath = path.join(
+      cwd,
+      "research",
+      "contact-stability",
+      "thread.md",
+    );
     expect(existsSync(threadPath)).toBe(true);
     expect(readFrontmatter(threadPath)).toMatchObject({
       thread: "contact-stability",
@@ -426,7 +491,12 @@ project_incomplete_markers:
     );
     chitkingArchive("contact-stability", { yes: true }, cwd);
 
-    const threadPath = path.join(cwd, "research", "contact-stability", "thread.md");
+    const threadPath = path.join(
+      cwd,
+      "research",
+      "contact-stability",
+      "thread.md",
+    );
     expect(readFrontmatter(threadPath).archived).toBe(true);
     expect(chitkingList(cwd)).not.toContain("contact-stability");
     expect(chitkingShow("contact-stability", cwd)).toContain("Archived: yes");
@@ -440,7 +510,9 @@ project_incomplete_markers:
     chitkingRestore("contact-stability", cwd);
 
     expect(readFrontmatter(threadPath).archived).toBeUndefined();
-    expect(chitkingFocus("contact-stability", {}, cwd)).toBe("contact-stability");
+    expect(chitkingFocus("contact-stability", {}, cwd)).toBe(
+      "contact-stability",
+    );
   });
 
   it("delete requires confirmation, removes the thread directory, and clears active", () => {
@@ -452,11 +524,15 @@ project_incomplete_markers:
     expect(() => chitkingDelete("contact-stability", {}, cwd)).toThrow(
       "chitking delete requires --yes",
     );
-    expect(existsSync(path.join(cwd, "research", "contact-stability"))).toBe(true);
+    expect(existsSync(path.join(cwd, "research", "contact-stability"))).toBe(
+      true,
+    );
 
     chitkingDelete("contact-stability", { yes: true }, cwd);
 
-    expect(existsSync(path.join(cwd, "research", "contact-stability"))).toBe(false);
+    expect(existsSync(path.join(cwd, "research", "contact-stability"))).toBe(
+      false,
+    );
     expect(readText(path.join(cwd, ".chitking", "active.yaml"))).toContain(
       "active_thread: null",
     );
@@ -469,7 +545,9 @@ project_incomplete_markers:
     chitkingNew("Contact Stability", {}, cwd);
 
     chitkingStep({}, cwd);
-    let frontmatter = readFrontmatter(path.join(cwd, "research", "contact-stability", "thread.md"));
+    let frontmatter = readFrontmatter(
+      path.join(cwd, "research", "contact-stability", "thread.md"),
+    );
     expect(frontmatter.stage).toBe("briefed");
     expect(frontmatter.maturity).toBe("nascent");
     expect(frontmatter.readiness).toBe(1);
@@ -477,8 +555,16 @@ project_incomplete_markers:
       "chitking step --to requires --reason",
     );
 
-    chitkingStep({ to: "gap-identified", readiness: 2, reason: "human accepted the gap" }, cwd);
-    const threadPath = path.join(cwd, "research", "contact-stability", "thread.md");
+    chitkingStep(
+      { to: "gap-identified", readiness: 2, reason: "human accepted the gap" },
+      cwd,
+    );
+    const threadPath = path.join(
+      cwd,
+      "research",
+      "contact-stability",
+      "thread.md",
+    );
     frontmatter = readFrontmatter(threadPath);
     expect(frontmatter.stage).toBe("gap-identified");
     expect(frontmatter.readiness).toBe(2);
@@ -496,7 +582,12 @@ project_incomplete_markers:
     vi.spyOn(console, "log").mockImplementation(() => undefined);
     chitkingInit(cwd);
     chitkingNew("Contact Stability", { noDispatch: true }, cwd);
-    const threadPath = path.join(cwd, "research", "contact-stability", "thread.md");
+    const threadPath = path.join(
+      cwd,
+      "research",
+      "contact-stability",
+      "thread.md",
+    );
 
     // Advance to final stage
     const stages = [
@@ -520,7 +611,9 @@ project_incomplete_markers:
     frontmatter = readFrontmatter(threadPath);
     expect(frontmatter.stage).toBe("seed");
     expect(frontmatter.readiness).toBe(1);
-    expect(readText(threadPath)).toContain("cycle complete; looped synthesis-ready→seed; readiness reset to 1.");
+    expect(readText(threadPath)).toContain(
+      "cycle complete; looped synthesis-ready→seed; readiness reset to 1.",
+    );
   });
 
   it("step loop-back forces readiness reset to 1 even when --readiness is provided", () => {
@@ -528,7 +621,12 @@ project_incomplete_markers:
     vi.spyOn(console, "log").mockImplementation(() => undefined);
     chitkingInit(cwd);
     chitkingNew("Contact Stability", { noDispatch: true }, cwd);
-    const threadPath = path.join(cwd, "research", "contact-stability", "thread.md");
+    const threadPath = path.join(
+      cwd,
+      "research",
+      "contact-stability",
+      "thread.md",
+    );
 
     // Advance to final stage with high readiness.
     const stages = [
@@ -541,7 +639,10 @@ project_incomplete_markers:
       "synthesis-ready",
     ];
     for (const stage of stages) {
-      chitkingStep({ to: stage, readiness: 5, reason: `advance to ${stage}` }, cwd);
+      chitkingStep(
+        { to: stage, readiness: 5, reason: `advance to ${stage}` },
+        cwd,
+      );
     }
     expect(readFrontmatter(threadPath).stage).toBe("synthesis-ready");
 
@@ -553,6 +654,153 @@ project_incomplete_markers:
     expect(readText(threadPath)).toContain("readiness reset to 1.");
   });
 
+  it("mature updates maturity, appends history, and auto-dispatches", () => {
+    const cwd = makeTempDir("chitking-mature-");
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    chitkingInit(cwd);
+    chitkingNew("Contact Stability", { noDispatch: true }, cwd);
+    const threadPath = path.join(
+      cwd,
+      "research",
+      "contact-stability",
+      "thread.md",
+    );
+
+    chitkingMature(
+      { to: "developing", reason: "theory brief and claim are now explicit" },
+      cwd,
+    );
+
+    const frontmatter = readFrontmatter(threadPath);
+    expect(frontmatter.maturity).toBe("developing");
+    expect(frontmatter.stage).toBe("seed");
+    expect(readText(threadPath)).toContain(
+      "maturity nascent→developing. Reason: theory brief and claim are now explicit",
+    );
+    expect(logSpy).toHaveBeenCalledWith(
+      "Maturity updated: contact-stability nascent → developing",
+    );
+    expect(logSpy).toHaveBeenCalledWith(
+      "Dispatched 7 role packets for contact-stability.",
+    );
+    expect(
+      existsSync(
+        path.join(
+          cwd,
+          "research",
+          "contact-stability",
+          "context",
+          "build.yaml",
+        ),
+      ),
+    ).toBe(true);
+  });
+
+  it("mature requires --to and --reason", () => {
+    const cwd = makeTempDir("chitking-mature-validation-");
+    vi.spyOn(console, "log").mockImplementation(() => undefined);
+    chitkingInit(cwd);
+    chitkingNew("Contact Stability", { noDispatch: true }, cwd);
+
+    expect(() =>
+      // @ts-expect-error intentionally testing runtime validation for missing `to`
+      chitkingMature({ reason: "missing target" }, cwd),
+    ).toThrow("Unknown maturity level: undefined");
+    expect(() =>
+      // @ts-expect-error intentionally testing runtime validation for missing `reason`
+      chitkingMature({ to: "developing" }, cwd),
+    ).toThrow("chitking mature requires --reason.");
+    expect(() =>
+      chitkingMature({ to: "developing", reason: "   " }, cwd),
+    ).toThrow("chitking mature requires --reason.");
+  });
+
+  it("mature validates --to against config maturity levels", () => {
+    const cwd = makeTempDir("chitking-mature-unknown-");
+    vi.spyOn(console, "log").mockImplementation(() => undefined);
+    chitkingInit(cwd);
+    chitkingNew("Contact Stability", { noDispatch: true }, cwd);
+
+    expect(() =>
+      chitkingMature({ to: "transcendent", reason: "unknown level" }, cwd),
+    ).toThrow("Unknown maturity level: transcendent");
+  });
+
+  it("mature --no-dispatch skips auto-dispatch", () => {
+    const cwd = makeTempDir("chitking-mature-no-dispatch-");
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    chitkingInit(cwd);
+    chitkingNew("Contact Stability", { noDispatch: true }, cwd);
+
+    chitkingMature(
+      { to: "developing", reason: "no dispatch this time", noDispatch: true },
+      cwd,
+    );
+
+    expect(
+      readFrontmatter(
+        path.join(cwd, "research", "contact-stability", "thread.md"),
+      ).maturity,
+    ).toBe("developing");
+    expect(logSpy).not.toHaveBeenCalledWith(
+      expect.stringContaining("Dispatched"),
+    );
+    expect(
+      existsSync(
+        path.join(
+          cwd,
+          "research",
+          "contact-stability",
+          "context",
+          "build.yaml",
+        ),
+      ),
+    ).toBe(false);
+  });
+
+  it("CLI mature --no-dispatch flag skips auto-dispatch through the option-parsing layer", () => {
+    const cwd = makeTempDir("chitking-cli-mature-no-dispatch-");
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    chitkingInit(cwd, { noDispatch: true });
+    chitkingNew("Contact Stability", { noDispatch: true }, cwd);
+    const originalCwd = process.cwd();
+    process.chdir(cwd);
+    try {
+      const program = createChitkingProgram();
+      program.parse(
+        [
+          "mature",
+          "--to",
+          "developing",
+          "--reason",
+          "cli test",
+          "--no-dispatch",
+        ],
+        { from: "user" },
+      );
+
+      expect(logSpy).toHaveBeenCalledWith(
+        "Maturity updated: contact-stability nascent → developing",
+      );
+      expect(logSpy).not.toHaveBeenCalledWith(
+        expect.stringContaining("Dispatched"),
+      );
+      expect(
+        existsSync(
+          path.join(
+            cwd,
+            "research",
+            "contact-stability",
+            "context",
+            "build.yaml",
+          ),
+        ),
+      ).toBe(false);
+    } finally {
+      process.chdir(originalCwd);
+    }
+  });
+
   it("new threads include the holistic maturity field defaulting to nascent", () => {
     const cwd = makeTempDir("chitking-maturity-field-");
     vi.spyOn(console, "log").mockImplementation(() => undefined);
@@ -560,7 +808,12 @@ project_incomplete_markers:
 
     chitkingNew("Contact Stability", { noDispatch: true }, cwd);
 
-    const threadPath = path.join(cwd, "research", "contact-stability", "thread.md");
+    const threadPath = path.join(
+      cwd,
+      "research",
+      "contact-stability",
+      "thread.md",
+    );
     const frontmatter = readFrontmatter(threadPath);
     expect(frontmatter).toMatchObject({
       stage: "seed",
@@ -571,7 +824,9 @@ project_incomplete_markers:
 
   it("reads legacy frontmatter with maturity as stage and warns once", () => {
     const cwd = makeTempDir("chitking-backward-compat-");
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const warnSpy = vi
+      .spyOn(console, "warn")
+      .mockImplementation(() => undefined);
     vi.spyOn(console, "log").mockImplementation(() => undefined);
     chitkingInit(cwd);
     const threadDir = path.join(cwd, "research", "legacy-thread");
@@ -618,7 +873,10 @@ legacy.
     const packetPath = chitkingDispatch({ role: "build" }, cwd);
 
     expect(packetPath).toBe("research/contact-stability/context/build.yaml");
-    const packet = parse(readText(path.join(cwd, packetPath))) as Record<string, unknown>;
+    const packet = parse(readText(path.join(cwd, packetPath))) as Record<
+      string,
+      unknown
+    >;
     expect(packet).toMatchObject({
       role: "build",
       thread: "contact-stability",
@@ -631,8 +889,12 @@ legacy.
         path.join(cwd, "research", "contact-stability", "thread.md"),
       ).updated_at,
     });
-    expect(readText(path.join(cwd, packetPath))).not.toContain("## Theory Brief");
-    expect(readText(path.join(cwd, packetPath))).toContain("readiness 1 is below");
+    expect(readText(path.join(cwd, packetPath))).not.toContain(
+      "## Theory Brief",
+    );
+    expect(readText(path.join(cwd, packetPath))).toContain(
+      "readiness 1 is below",
+    );
   });
 
   it("dispatch writes Dreamer packet with ideation boundaries", () => {
@@ -685,9 +947,7 @@ legacy.
       const packetRepoPath = `research/contact-stability/context/${role}.yaml`;
       expect(output).toContain(packetRepoPath);
       expect(logSpy).toHaveBeenCalledWith(packetRepoPath);
-      expect(
-        existsSync(path.join(cwd, packetRepoPath)),
-      ).toBe(true);
+      expect(existsSync(path.join(cwd, packetRepoPath))).toBe(true);
     }
   });
 
@@ -706,7 +966,9 @@ legacy.
     expect(output).toContain("Maturity: nascent");
     expect(output).toContain("Readiness: 1 (human)");
     expect(output).toContain("research/project.md appears incomplete");
-    expect(output).toContain("Generated context packet may be stale: build.yaml");
+    expect(output).toContain(
+      "Generated context packet may be stale: build.yaml",
+    );
     expect(output).toContain("Allowed-but-risky roles:");
     expect(output).toContain("Recovery options if stuck:");
   });
@@ -718,18 +980,36 @@ legacy.
     chitkingNew("Contact Stability", {}, cwd);
     chitkingNew("Friction Model", {}, cwd);
     execFileSync("git", ["init"], { cwd, stdio: "ignore" });
-    execFileSync("git", ["config", "user.email", "test@example.com"], { cwd, stdio: "ignore" });
-    execFileSync("git", ["config", "user.name", "Test User"], { cwd, stdio: "ignore" });
+    execFileSync("git", ["config", "user.email", "test@example.com"], {
+      cwd,
+      stdio: "ignore",
+    });
+    execFileSync("git", ["config", "user.name", "Test User"], {
+      cwd,
+      stdio: "ignore",
+    });
     execFileSync("git", ["add", "."], { cwd, stdio: "ignore" });
-    execFileSync("git", ["commit", "-m", "seed research harness"], { cwd, stdio: "ignore" });
+    execFileSync("git", ["commit", "-m", "seed research harness"], {
+      cwd,
+      stdio: "ignore",
+    });
 
     chitkingFocus("contact-stability", {}, cwd);
     expect(chitkingOrient(cwd)).not.toContain("Dirty working tree may contain");
-    writeFileSync(path.join(cwd, "model.ts"), "export const model = 1;\n", "utf-8");
+    writeFileSync(
+      path.join(cwd, "model.ts"),
+      "export const model = 1;\n",
+      "utf-8",
+    );
     expect(chitkingOrient(cwd)).toContain("Dirty working tree may contain");
     execFileSync("git", ["add", "model.ts"], { cwd, stdio: "ignore" });
-    execFileSync("git", ["commit", "-m", "record model progress"], { cwd, stdio: "ignore" });
-    expect(chitkingOrient(cwd)).toContain("Recent repository commits are not listed in recorded_commits.");
+    execFileSync("git", ["commit", "-m", "record model progress"], {
+      cwd,
+      stdio: "ignore",
+    });
+    expect(chitkingOrient(cwd)).toContain(
+      "Recent repository commits are not listed in recorded_commits.",
+    );
   });
 
   it("record appends factual output and can add resolved commits", () => {
@@ -738,15 +1018,39 @@ legacy.
     chitkingInit(cwd);
     chitkingNew("Contact Stability", {}, cwd);
     execFileSync("git", ["init"], { cwd, stdio: "ignore" });
-    execFileSync("git", ["config", "user.email", "test@example.com"], { cwd, stdio: "ignore" });
-    execFileSync("git", ["config", "user.name", "Test User"], { cwd, stdio: "ignore" });
+    execFileSync("git", ["config", "user.email", "test@example.com"], {
+      cwd,
+      stdio: "ignore",
+    });
+    execFileSync("git", ["config", "user.name", "Test User"], {
+      cwd,
+      stdio: "ignore",
+    });
     execFileSync("git", ["add", "."], { cwd, stdio: "ignore" });
-    execFileSync("git", ["commit", "-m", "seed research thread"], { cwd, stdio: "ignore" });
-    const head = execFileSync("git", ["rev-parse", "HEAD"], { cwd, encoding: "utf-8" }).trim();
+    execFileSync("git", ["commit", "-m", "seed research thread"], {
+      cwd,
+      stdio: "ignore",
+    });
+    const head = execFileSync("git", ["rev-parse", "HEAD"], {
+      cwd,
+      encoding: "utf-8",
+    }).trim();
 
-    chitkingRecord({ type: "evidence", commit: "HEAD", text: "Verification passed on fixture A." }, cwd);
+    chitkingRecord(
+      {
+        type: "evidence",
+        commit: "HEAD",
+        text: "Verification passed on fixture A.",
+      },
+      cwd,
+    );
 
-    const threadPath = path.join(cwd, "research", "contact-stability", "thread.md");
+    const threadPath = path.join(
+      cwd,
+      "research",
+      "contact-stability",
+      "thread.md",
+    );
     expect(readText(threadPath)).toContain("Verification passed on fixture A.");
     expect(readFrontmatter(threadPath).recorded_commits).toEqual([head]);
   });
@@ -774,10 +1078,24 @@ legacy.
     expect(logSpy).toHaveBeenCalledWith(
       "Dispatched 7 role packets for contact-stability.",
     );
-    for (const role of ["build", "dreamer", "oracle", "plan", "review", "synthesize", "verify"]) {
+    for (const role of [
+      "build",
+      "dreamer",
+      "oracle",
+      "plan",
+      "review",
+      "synthesize",
+      "verify",
+    ]) {
       expect(
         existsSync(
-          path.join(cwd, "research", "contact-stability", "context", `${role}.yaml`),
+          path.join(
+            cwd,
+            "research",
+            "contact-stability",
+            "context",
+            `${role}.yaml`,
+          ),
         ),
       ).toBe(true);
     }
@@ -797,7 +1115,13 @@ legacy.
     );
     expect(
       existsSync(
-        path.join(cwd, "research", "contact-stability", "context", "build.yaml"),
+        path.join(
+          cwd,
+          "research",
+          "contact-stability",
+          "context",
+          "build.yaml",
+        ),
       ),
     ).toBe(true);
   });
@@ -815,7 +1139,13 @@ legacy.
     );
     expect(
       existsSync(
-        path.join(cwd, "research", "contact-stability", "context", "build.yaml"),
+        path.join(
+          cwd,
+          "research",
+          "contact-stability",
+          "context",
+          "build.yaml",
+        ),
       ),
     ).toBe(true);
   });
@@ -858,7 +1188,13 @@ legacy.
     );
     expect(
       existsSync(
-        path.join(cwd, "research", "contact-stability", "context", "build.yaml"),
+        path.join(
+          cwd,
+          "research",
+          "contact-stability",
+          "context",
+          "build.yaml",
+        ),
       ),
     ).toBe(false);
   });
@@ -875,7 +1211,13 @@ legacy.
     );
     expect(
       existsSync(
-        path.join(cwd, "research", "contact-stability", "context", "build.yaml"),
+        path.join(
+          cwd,
+          "research",
+          "contact-stability",
+          "context",
+          "build.yaml",
+        ),
       ),
     ).toBe(false);
   });
@@ -893,7 +1235,13 @@ legacy.
     );
     expect(
       existsSync(
-        path.join(cwd, "research", "contact-stability", "context", "build.yaml"),
+        path.join(
+          cwd,
+          "research",
+          "contact-stability",
+          "context",
+          "build.yaml",
+        ),
       ),
     ).toBe(false);
   });
@@ -911,7 +1259,13 @@ legacy.
     );
     expect(
       existsSync(
-        path.join(cwd, "research", "contact-stability", "context", "build.yaml"),
+        path.join(
+          cwd,
+          "research",
+          "contact-stability",
+          "context",
+          "build.yaml",
+        ),
       ),
     ).toBe(false);
   });
@@ -921,7 +1275,12 @@ legacy.
     vi.spyOn(console, "log").mockImplementation(() => undefined);
     chitkingInit(cwd);
     chitkingNew("Contact Stability", { noDispatch: true }, cwd);
-    const threadPath = path.join(cwd, "research", "contact-stability", "thread.md");
+    const threadPath = path.join(
+      cwd,
+      "research",
+      "contact-stability",
+      "thread.md",
+    );
     const threadText = readText(threadPath);
     writeFileSync(
       threadPath,
@@ -936,10 +1295,14 @@ legacy.
 
     expect(output).toContain("Assessment for thread: contact-stability");
     expect(output).toContain("Stage: seed");
-    expect(output).toContain("Stage advancement criteria (to advance from seed):");
+    expect(output).toContain(
+      "Stage advancement criteria (to advance from seed):",
+    );
     expect(output).toContain("✓ Theory Brief: non-empty");
     expect(output).toContain("✗ Current Claim: empty (0 words)");
-    expect(output).toContain("→ Readiness to advance: 1/2 criteria met — not ready to step");
+    expect(output).toContain(
+      "→ Readiness to advance: 1/2 criteria met — not ready to step",
+    );
     expect(output).toContain("Maturity criteria (for next level: developing):");
     expect(output).toContain("✓ Theory Brief: ≥20 words (");
     expect(output).toContain("✗ Current Claim: empty (0 words)");
@@ -951,7 +1314,12 @@ legacy.
     vi.spyOn(console, "log").mockImplementation(() => undefined);
     chitkingInit(cwd);
     chitkingNew("Contact Stability", { noDispatch: true }, cwd);
-    const threadPath = path.join(cwd, "research", "contact-stability", "thread.md");
+    const threadPath = path.join(
+      cwd,
+      "research",
+      "contact-stability",
+      "thread.md",
+    );
     const threadText = readText(threadPath);
     writeFileSync(
       threadPath,
@@ -969,7 +1337,9 @@ legacy.
 
     const output = chitkingAssess(undefined, cwd);
 
-    expect(output).toContain("→ Readiness to advance: 2/2 criteria met — ready to step");
+    expect(output).toContain(
+      "→ Readiness to advance: 2/2 criteria met — ready to step",
+    );
     expect(output).toContain("chitking step --to briefed --reason");
   });
 
@@ -1058,7 +1428,12 @@ project_incomplete_markers: []
     vi.spyOn(console, "log").mockImplementation(() => undefined);
     chitkingInit(cwd);
     chitkingNew("Contact Stability", { noDispatch: true }, cwd);
-    const threadPath = path.join(cwd, "research", "contact-stability", "thread.md");
+    const threadPath = path.join(
+      cwd,
+      "research",
+      "contact-stability",
+      "thread.md",
+    );
     const activePath = path.join(cwd, ".chitking", "active.yaml");
     const threadBefore = readText(threadPath);
     const activeBefore = readText(activePath);
@@ -1075,11 +1450,21 @@ project_incomplete_markers: []
     chitkingInit(cwd);
     chitkingNew("Contact Stability", { noDispatch: true }, cwd);
 
-    const newSlug = chitkingIterate("Friction Model", { noDispatch: true }, cwd);
+    const newSlug = chitkingIterate(
+      "Friction Model",
+      { noDispatch: true },
+      cwd,
+    );
 
     expect(newSlug).toBe("friction-model");
-    expect(readFrontmatter(path.join(cwd, "research", "contact-stability", "thread.md")).archived).toBe(true);
-    const newFrontmatter = readFrontmatter(path.join(cwd, "research", "friction-model", "thread.md"));
+    expect(
+      readFrontmatter(
+        path.join(cwd, "research", "contact-stability", "thread.md"),
+      ).archived,
+    ).toBe(true);
+    const newFrontmatter = readFrontmatter(
+      path.join(cwd, "research", "friction-model", "thread.md"),
+    );
     expect(newFrontmatter).toMatchObject({
       thread: "friction-model",
       title: "Friction Model",
@@ -1088,9 +1473,9 @@ project_incomplete_markers: []
       readiness: 1,
       predecessor: "contact-stability",
     });
-    expect(readText(path.join(cwd, "research", "friction-model", "thread.md"))).toContain(
-      "Iterated from contact-stability (archived).",
-    );
+    expect(
+      readText(path.join(cwd, "research", "friction-model", "thread.md")),
+    ).toContain("Iterated from contact-stability (archived).");
     expect(readText(path.join(cwd, ".chitking", "active.yaml"))).toContain(
       "active_thread: friction-model",
     );
@@ -1103,11 +1488,20 @@ project_incomplete_markers: []
     chitkingInit(cwd);
     chitkingNew("Contact Stability", { noDispatch: true }, cwd);
 
-    const newSlug = chitkingIterate("Friction Model", { slug: "friction", noDispatch: true }, cwd);
+    const newSlug = chitkingIterate(
+      "Friction Model",
+      { slug: "friction", noDispatch: true },
+      cwd,
+    );
 
     expect(newSlug).toBe("friction");
-    expect(existsSync(path.join(cwd, "research", "friction", "thread.md"))).toBe(true);
-    expect(readFrontmatter(path.join(cwd, "research", "friction", "thread.md")).predecessor).toBe("contact-stability");
+    expect(
+      existsSync(path.join(cwd, "research", "friction", "thread.md")),
+    ).toBe(true);
+    expect(
+      readFrontmatter(path.join(cwd, "research", "friction", "thread.md"))
+        .predecessor,
+    ).toBe("contact-stability");
   });
 
   it("iterate auto-dispatches all role packets for the new thread", () => {
@@ -1121,10 +1515,24 @@ project_incomplete_markers: []
     expect(logSpy).toHaveBeenCalledWith(
       "Dispatched 7 role packets for friction-model.",
     );
-    for (const role of ["build", "dreamer", "oracle", "plan", "review", "synthesize", "verify"]) {
+    for (const role of [
+      "build",
+      "dreamer",
+      "oracle",
+      "plan",
+      "review",
+      "synthesize",
+      "verify",
+    ]) {
       expect(
         existsSync(
-          path.join(cwd, "research", "friction-model", "context", `${role}.yaml`),
+          path.join(
+            cwd,
+            "research",
+            "friction-model",
+            "context",
+            `${role}.yaml`,
+          ),
         ),
       ).toBe(true);
     }
@@ -1142,7 +1550,9 @@ project_incomplete_markers: []
       expect.stringContaining("Dispatched"),
     );
     expect(
-      existsSync(path.join(cwd, "research", "friction-model", "context", "build.yaml")),
+      existsSync(
+        path.join(cwd, "research", "friction-model", "context", "build.yaml"),
+      ),
     ).toBe(false);
   });
 
@@ -1151,9 +1561,9 @@ project_incomplete_markers: []
     vi.spyOn(console, "log").mockImplementation(() => undefined);
     chitkingInit(cwd);
 
-    expect(() => chitkingIterate("Friction Model", { noDispatch: true }, cwd)).toThrow(
-      "No active Chitking thread",
-    );
+    expect(() =>
+      chitkingIterate("Friction Model", { noDispatch: true }, cwd),
+    ).toThrow("No active Chitking thread");
   });
 
   it("CLI --no-dispatch flag skips auto-dispatch through the option-parsing layer", () => {
@@ -1176,7 +1586,13 @@ project_incomplete_markers: []
       );
       expect(
         existsSync(
-          path.join(cwd, "research", "contact-stability", "context", "build.yaml"),
+          path.join(
+            cwd,
+            "research",
+            "contact-stability",
+            "context",
+            "build.yaml",
+          ),
         ),
       ).toBe(false);
     } finally {
@@ -1197,7 +1613,9 @@ project_incomplete_markers: []
         from: "user",
       });
 
-      expect(logSpy).toHaveBeenCalledWith("Iterated: contact-stability → friction-model");
+      expect(logSpy).toHaveBeenCalledWith(
+        "Iterated: contact-stability → friction-model",
+      );
       expect(logSpy).not.toHaveBeenCalledWith(
         expect.stringContaining("Dispatched"),
       );

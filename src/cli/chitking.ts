@@ -11,6 +11,7 @@ import {
   chitkingInit,
   chitkingIterate,
   chitkingList,
+  chitkingMature,
   chitkingNew,
   chitkingOrient,
   chitkingRecord,
@@ -59,15 +60,11 @@ export function createChitkingProgram(): Command {
 
   program
     .command("init")
-    .description(
-      "Initialize Chitking scaffold in the current repository",
-    )
+    .description("Initialize Chitking scaffold in the current repository")
     .option("--no-dispatch", "Skip auto-dispatch of role packets")
     .allowExcessArguments(false)
     .action((options: { dispatch?: boolean }) =>
-      runWithErrors(() =>
-        chitkingInit(process.cwd(), withNoDispatch(options)),
-      ),
+      runWithErrors(() => chitkingInit(process.cwd(), withNoDispatch(options))),
     );
 
   program
@@ -101,9 +98,7 @@ export function createChitkingProgram(): Command {
     .option("--no-dispatch", "Skip auto-dispatch of role packets")
     .allowExcessArguments(false)
     .action((activeThread: string, options: { dispatch?: boolean }) =>
-      runWithErrors(() =>
-        chitkingFocus(activeThread, withNoDispatch(options)),
-      ),
+      runWithErrors(() => chitkingFocus(activeThread, withNoDispatch(options))),
     );
 
   program
@@ -128,9 +123,7 @@ export function createChitkingProgram(): Command {
     .command("restore")
     .description("Restore an archived research thread")
     .argument("<thread>", "Thread slug to restore")
-    .action((thread: string) =>
-      runWithErrors(() => chitkingRestore(thread)),
-    );
+    .action((thread: string) => runWithErrors(() => chitkingRestore(thread)));
 
   program
     .command("delete")
@@ -178,6 +171,29 @@ export function createChitkingProgram(): Command {
     );
 
   program
+    .command("mature")
+    .description("Update whole-thread maturity with explicit human consent")
+    .requiredOption(
+      "--to <level>",
+      "Target maturity level (nascent, developing, established, mature)",
+    )
+    .requiredOption(
+      "--reason <text>",
+      "Required reason for the maturity change",
+    )
+    .option("--no-dispatch", "Skip auto-dispatch of role packets")
+    .allowExcessArguments(false)
+    .action((options: { to: string; reason: string; dispatch?: boolean }) =>
+      runWithErrors(() =>
+        chitkingMature({
+          to: options.to,
+          reason: options.reason,
+          ...withNoDispatch(options),
+        }),
+      ),
+    );
+
+  program
     .command("dispatch")
     .description("Generate role prompt packets for the active thread")
     .option(
@@ -190,7 +206,9 @@ export function createChitkingProgram(): Command {
 
   program
     .command("record")
-    .description("Agent utility: append factual role output to the active thread")
+    .description(
+      "Agent utility: append factual role output to the active thread",
+    )
     .requiredOption(
       "--type <type>",
       "Record type: evidence, failure, decision, revision",
@@ -213,14 +231,13 @@ export function createChitkingProgram(): Command {
     .option("--slug <slug>", "Override generated slug")
     .option("--no-dispatch", "Skip auto-dispatch of role packets")
     .allowExcessArguments(false)
-    .action(
-      (title: string, options: { slug?: string; dispatch?: boolean }) =>
-        runWithErrors(() =>
-          chitkingIterate(title, {
-            slug: options.slug,
-            ...withNoDispatch(options),
-          }),
-        ),
+    .action((title: string, options: { slug?: string; dispatch?: boolean }) =>
+      runWithErrors(() =>
+        chitkingIterate(title, {
+          slug: options.slug,
+          ...withNoDispatch(options),
+        }),
+      ),
     );
 
   program.addHelpText(

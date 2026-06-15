@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend spec overview — command implementation patterns"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Error patterns for validation (missing --to/--reason, unknown maturity level)"}
+{"file": ".trellis/spec/guides/chitking-product-doctrine.md", "reason": "Product doctrine — humans own maturity transitions, explicit command required"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Reuse step/iterate patterns for mature command"}
