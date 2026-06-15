@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend spec — directory structure, module organization conventions"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "File/YAML patterns — ensure split preserves read/write conventions"}
+{"file": ".trellis/spec/guides/chitking-product-doctrine.md", "reason": "Product doctrine — naming, boundaries"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Code reuse — ensure no duplication introduced by split"}
