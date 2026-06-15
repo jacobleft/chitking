@@ -203,3 +203,36 @@ Added scripts/bump-version.js that increments patch version in both package.json
 ### Next Steps
 
 - None - task complete
+
+
+## Session 7: Circular maturity model: stage/readiness/maturity redesign
+
+**Date**: 2026-06-15
+**Task**: Circular maturity model: stage/readiness/maturity redesign
+**Branch**: `main`
+
+### Summary
+
+Replaced linear maturity_ladder with circular research lifecycle. Renamed frontmatter maturity→stage (circle position), added new holistic maturity field (nascent/developing/established/mature), readiness resets to 1 on every step, chitkingStep at synthesis-ready loops to seed. Config schema: maturity_ladder→stages, readiness_thresholds→stage_advancement, min_maturity→min_stage, added maturity_levels. Backward compat reader for old frontmatter/config keys. Plugin breadcrumb shows Stage+Maturity separately. Brainstormed proactive-new-guidance task was archived as design record; circular-maturity-model was extracted as foundation task. Checker fixed 7 issues (1 critical YAML indent bug, 1 readiness override bug, 4 stale specs, 1 strengthened test). Version 0.0.1→0.0.2. 41 tests green.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e547726` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
