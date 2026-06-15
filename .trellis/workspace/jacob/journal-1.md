@@ -337,3 +337,36 @@ Three follow-up items: (1) Relaxed seed-stage plugin directive to co-ownership s
 ### Next Steps
 
 - None - task complete
+
+
+## Session 11: Whole-picture breadcrumb: stage progression + readiness context
+
+**Date**: 2026-06-15
+**Task**: Whole-picture breadcrumb: stage progression + readiness context
+**Branch**: `main`
+
+### Summary
+
+Redesigned plugin breadcrumb output: all stages shown with current in [brackets] and → (loop) suffix. Readiness as X/5 with threshold comparison and ✓/✗ ready indicator. Maturity label with (whole-thread quality) annotation. Directive prefixed with 'Next:'. No more clustering by warnings/risky — unified flow showing where we are → what to do. CHITKING_PROACTIVE=0 still works. Role context unchanged. 67 tests green. v0.0.5.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `08599dd` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
