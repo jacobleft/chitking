@@ -54,8 +54,11 @@ They must not quietly decide that research has advanced, that evidence is mature
   It stores the durable state Chitking owns for the research path.
 - `.trellis/` is development workflow state only.
   Trellis may be a development harness or inspiration, but it is not Chitking runtime state or product identity.
-- `research/` is user research content.
-  Chitking may organize and reference it, but the researcher owns its meaning and source-of-truth status.
+- `research/` is user research content, co-owned by agent and human.
+  Thread.md is collaboratively edited — agents may draft sections, record evidence, and fill content, but must not implicitly overwrite human edits.
+  Hash-based change detection ensures agents always work from the latest file version.
+- Humans own stage/readiness/maturity transitions and the overall research direction.
+  Agents recommend, humans decide.
 - Durable, user-editable files are source of truth.
   Generated context packets, temporary exports, and adapters are cache/context.
 - Commands, file names, and generated labels should remain Chitking-native unless they refer to an external tool boundary.
@@ -64,11 +67,13 @@ They must not quietly decide that research has advanced, that evidence is mature
 
 ## Product invariants
 
-- Human users own judgment, maturity, readiness, and source-of-truth state.
-- Chitking must keep durable research memory inspectable and editable.
+- Human users own stage/readiness/maturity transitions and the overall research direction.
+- Thread.md content is co-owned by agent and human — both may write, but agents must not implicitly overwrite human edits.
+- Chitking must keep durable research memory inspectable and editable by both humans and agents.
 - Chitking must distinguish durable state from generated context.
 - Chitking must make role context explicit before agents act on research material.
-- Chitking must avoid silent state advancement.
+- Chitking must avoid silent state advancement (stage/readiness/maturity changes always require explicit human decision).
+- Agents writing to thread.md must hash-check first to ensure they work from the latest version and never clobber a human's concurrent edit.
 - Chitking must preserve clear boundaries among product state, development workflow state, and user research content.
 - Chitking language should describe the product as its own research path.
 
@@ -79,19 +84,21 @@ They must not quietly decide that research has advanced, that evidence is mature
 When product decisions are ambiguous, prefer the option that:
 
 1. Makes research state more explicit rather than more implicit.
-2. Keeps humans in control of maturity and readiness transitions.
+2. Keeps humans in control of stage/readiness/maturity transitions.
 3. Writes durable conclusions to user-editable source files instead of generated packets.
 4. Treats generated outputs as reproducible context, not authoritative truth.
 5. Uses Chitking-native names and concepts for Chitking product behavior.
 6. Preserves clean boundaries between `.chitking/`, `.trellis/`, and `research/`.
 7. Helps a future researcher resume the thread with less hidden context.
+8. When writing to thread.md, hash-check first and never implicitly overwrite a human's edit.
 
 ---
 
 ## What future agents should do when uncertain
 
 - Read this doctrine before making product-facing changes.
-- Ask whether a change affects human-owned judgment, maturity, readiness, or source-of-truth state.
+- Ask whether a change affects human-owned stage/readiness/maturity transitions or research direction.
+- Thread.md is co-owned — agents may write section content but must re-read (hash-check) before writing and never silently overwrite human edits.
 - If a state transition is ambiguous, do not perform it silently; ask for explicit instruction or leave a visible pending state.
 - If a file could be durable source of truth or generated context, choose durable only when it is user-editable and intended to be maintained.
 - If naming is ambiguous, choose Chitking-native language.
