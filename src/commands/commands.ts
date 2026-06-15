@@ -84,6 +84,41 @@ export function formatChitkingStatus(
   return `${status.productName} (${status.chineseName}): ${status.message}`;
 }
 
+function formatStageProgression(
+  stages: string[],
+  currentStage: string,
+): string {
+  return (
+    stages.map((s) => (s === currentStage ? `[${s}]` : s)).join(" → ") +
+    " → (loop)"
+  );
+}
+
+function formatReadinessLine(
+  thread: { stage: string; readiness: number },
+  config: ResearchConfig,
+): string {
+  const stageIndex = config.stages.indexOf(thread.stage);
+  const readiness = thread.readiness;
+
+  if (stageIndex === -1 || config.stages.length === 0) {
+    return `Readiness: ${readiness}/5`;
+  }
+
+  const isFinalStage = stageIndex === config.stages.length - 1;
+  const nextStage = isFinalStage
+    ? config.stages[0]
+    : config.stages[stageIndex + 1];
+  const threshold = config.stage_advancement[thread.stage] ?? 0;
+
+  if (isFinalStage) {
+    return `Readiness: ${readiness}/5 — ready to loop back to ${nextStage} ✓`;
+  }
+
+  const isReady = readiness >= threshold;
+  return `Readiness: ${readiness}/5 — need ≥${threshold} to advance to ${nextStage} ${isReady ? "✓ ready" : "✗ not ready"}`;
+}
+
 export function evaluateCriterion(
   body: string,
   criterion: AssessCriterion,
@@ -407,17 +442,18 @@ export function chitkingShow(
   thread?: string,
   cwd: string = process.cwd(),
 ): string {
-  loadConfig(cwd);
+  const config = loadConfig(cwd);
   const slug = thread ? validateSlug(thread) : resolveActiveThread(cwd);
   const parsedThread = readThread(cwd, slug);
   const lines = [
     `Thread: ${slug}`,
     `Title: ${parsedThread.frontmatter.title}`,
-    `Stage: ${parsedThread.frontmatter.stage}`,
+    "",
+    `Stages: ${formatStageProgression(config.stages, parsedThread.frontmatter.stage)}`,
+    formatReadinessLine(parsedThread.frontmatter, config),
     `Maturity: ${parsedThread.frontmatter.maturity}`,
-    `Readiness: ${parsedThread.frontmatter.readiness} (${parsedThread.frontmatter.readiness_source})`,
-    `Archived: ${isThreadArchived(parsedThread) ? "yes" : "no"}`,
-    `Updated: ${parsedThread.frontmatter.updated_at}`,
+    "",
+    `Archived: ${isThreadArchived(parsedThread) ? "yes" : "no"} | Updated: ${parsedThread.frontmatter.updated_at}`,
     `Thread file: ${toRepoPath(cwd, getThreadPath(cwd, slug))}`,
     `Context cache: ${toRepoPath(cwd, getContextDir(cwd, slug))}`,
   ];
@@ -534,74 +570,57 @@ export function chitkingOrient(cwd: string = process.cwd()): string {
   const unrecordedCommits = git.recentCommits.filter(
     (commit) => !thread.frontmatter.recorded_commits.includes(commit),
   );
-  const riskyRoles = Object.entries(config.roles)
-    .map(([roleName, role]) => ({
-      roleName,
-      warnings: roleRiskWarnings(role, config, thread.frontmatter),
-    }))
-    .filter((role) => role.warnings.length > 0);
   const currentIndex = config.stages.indexOf(thread.frontmatter.stage);
   const nextStage =
     currentIndex >= 0 && currentIndex < config.stages.length - 1
       ? config.stages[currentIndex + 1]
       : config.stages[0];
 
-  const lines = [
-    `Active thread: ${slug}`,
-    `Stage: ${thread.frontmatter.stage}`,
-    `Maturity: ${thread.frontmatter.maturity}`,
-    `Readiness: ${thread.frontmatter.readiness} (${thread.frontmatter.readiness_source})`,
-    "",
-    "Warnings / blockers:",
-  ];
-
-  if (!projectContent) lines.push("- research/project.md is missing or empty.");
+  const issues: string[] = [];
+  if (!projectContent) issues.push("research/project.md is missing or empty.");
   if (projectLooksIncomplete(projectContent, config)) {
-    lines.push("- research/project.md appears incomplete.");
+    issues.push("research/project.md appears incomplete.");
   }
   for (const section of missingSections) {
-    lines.push(`- thread.md missing required section: ${section}`);
+    issues.push(`thread.md missing required section: ${section}`);
   }
   if (git.dirty.length > 0) {
-    lines.push("- Dirty working tree may contain unrecorded thread progress.");
+    issues.push("Dirty working tree may contain unrecorded thread progress.");
   }
   if (unrecordedCommits.length > 0) {
-    lines.push(
-      "- Recent repository commits are not listed in recorded_commits.",
+    issues.push(
+      "Recent repository commits are not listed in recorded_commits.",
     );
   }
   for (const packet of stalePackets) {
-    lines.push(`- Generated context packet may be stale: ${packet}`);
-  }
-  if (lines[lines.length - 1] === "Warnings / blockers:") {
-    lines.push("- None detected.");
+    issues.push(`Generated context packet may be stale: ${packet}`);
   }
 
-  lines.push("", "Allowed-but-risky roles:");
-  if (riskyRoles.length === 0) {
-    lines.push("- None detected.");
+  const lines = [
+    `Thread: ${slug}`,
+    `Title: ${thread.frontmatter.title}`,
+    "",
+    `Stages: ${formatStageProgression(config.stages, thread.frontmatter.stage)}`,
+    formatReadinessLine(thread.frontmatter, config),
+    `Maturity: ${thread.frontmatter.maturity} (whole-thread quality)`,
+    "",
+    "Issues:",
+  ];
+  if (issues.length === 0) {
+    lines.push("None.");
   } else {
-    for (const role of riskyRoles) {
-      lines.push(`- ${role.roleName}: ${role.warnings.join("; ")}`);
+    for (const issue of issues) {
+      lines.push(`- ${issue}`);
     }
   }
 
-  lines.push("", "Recommended next safe actions:");
-  if (nextStage) {
-    lines.push(
-      `- If the thread is ready, run: chitking step --to ${nextStage} --reason "..."`,
-    );
-  }
   lines.push(
-    "- Edit research/project.md or thread.md directly before agent fan-out.",
-  );
-  lines.push("- Refresh role packets with: chitking dispatch [--role <role>]");
-  lines.push("", "Recovery options if stuck:");
-  lines.push(
-    '- Record a failed path with: chitking record --type failure --text "..."',
-  );
-  lines.push(
-    '- Move stage backward with: chitking step --to <stage> --reason "..."',
+    "",
+    "Next steps:",
+    "- chitking assess — evaluate content against stage criteria",
+    `- chitking step --to ${nextStage} --reason "..." — advance to next stage`,
+    "- chitking dispatch — refresh role packets",
+    '- chitking record --type failure --text "..." — record a failed path',
   );
 
   const output = lines.join("\n");

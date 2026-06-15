@@ -448,11 +448,30 @@ project_incomplete_markers:
     const before = readText(firstThreadPath);
 
     expect(chitkingList(cwd)).toContain("friction-model — Friction Model");
-    expect(chitkingShow(undefined, cwd)).toContain("Thread: friction-model");
+
+    const showFriction = chitkingShow(undefined, cwd);
+    expect(showFriction).toContain("Thread: friction-model");
+    expect(showFriction).toContain("Title: Friction Model");
+    expect(showFriction).toContain("Stages:");
+    expect(showFriction).toContain("[seed]");
+    expect(showFriction).toContain("→ (loop)");
+    expect(showFriction).toContain(
+      "Readiness: 1/5 — need ≥1 to advance to briefed ✓ ready",
+    );
+
     expect(chitkingFocus("contact-stability", {}, cwd)).toBe(
       "contact-stability",
     );
-    expect(chitkingShow(undefined, cwd)).toContain("Thread: contact-stability");
+
+    const showContact = chitkingShow(undefined, cwd);
+    expect(showContact).toContain("Thread: contact-stability");
+    expect(showContact).toContain("Title: Contact Stability");
+    expect(showContact).toContain("Stages:");
+    expect(showContact).toContain("[seed]");
+    expect(showContact).toContain("→ (loop)");
+    expect(showContact).toContain(
+      "Readiness: 1/5 — need ≥1 to advance to briefed ✓ ready",
+    );
     expect(readText(firstThreadPath)).toBe(before);
   });
 
@@ -857,7 +876,10 @@ legacy.
 
     const output = chitkingShow("legacy-thread", cwd);
 
-    expect(output).toContain("Stage: seed");
+    expect(output).toContain("Thread: legacy-thread");
+    expect(output).toContain("Title: Legacy Thread");
+    expect(output).toContain("Stages:");
+    expect(output).toContain("[seed]");
     expect(output).toContain("Maturity: nascent");
     expect(warnSpy).toHaveBeenCalledWith(
       "Migrating frontmatter: maturity→stage. Run chitking show to verify.",
@@ -961,16 +983,35 @@ legacy.
 
     const output = chitkingOrient(cwd);
 
-    expect(output).toContain("Active thread: contact-stability");
-    expect(output).toContain("Stage: briefed");
-    expect(output).toContain("Maturity: nascent");
-    expect(output).toContain("Readiness: 1 (human)");
+    expect(output).toContain("Thread: contact-stability");
+    expect(output).toContain("Title: Contact Stability");
+    expect(output).toContain("Stages:");
+    expect(output).toContain("[briefed]");
+    expect(output).toContain("→ (loop)");
+    expect(output).toContain(
+      "Readiness: 1/5 — need ≥1 to advance to gap-identified ✓ ready",
+    );
+    expect(output).toContain("Maturity: nascent (whole-thread quality)");
+    expect(output).toContain("Issues:");
     expect(output).toContain("research/project.md appears incomplete");
     expect(output).toContain(
       "Generated context packet may be stale: build.yaml",
     );
-    expect(output).toContain("Allowed-but-risky roles:");
-    expect(output).toContain("Recovery options if stuck:");
+    expect(output).toContain("Next steps:");
+    expect(output).toContain(
+      "chitking assess — evaluate content against stage criteria",
+    );
+    expect(output).toContain(
+      'chitking step --to gap-identified --reason "..." — advance to next stage',
+    );
+    expect(output).toContain("chitking dispatch — refresh role packets");
+    expect(output).toContain(
+      '- chitking record --type failure --text "..." — record a failed path',
+    );
+    expect(output).not.toContain("Allowed-but-risky roles:");
+    expect(output).not.toContain("Warnings / blockers:");
+    expect(output).not.toContain("Recovery options if stuck:");
+    expect(output).not.toContain("Recommended next safe actions:");
   });
 
   it("orient checks repo activity beyond thread.md without active-pointer noise", () => {
