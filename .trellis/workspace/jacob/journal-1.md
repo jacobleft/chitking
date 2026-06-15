@@ -403,3 +403,36 @@ Two deliverables: (1) chitking mature --to <level> --reason <text> command for w
 ### Next Steps
 
 - None - task complete
+
+
+## Session 13: Cleanup + refactor: dup ck-step, assess→mature, module split
+
+**Date**: 2026-06-15
+**Task**: Cleanup + refactor: dup ck-step, assess→mature, module split
+**Branch**: `main`
+
+### Summary
+
+Three changes: (1) Removed duplicate ck-step from CK_COMMANDS. (2) chitkingAssess maturity recommendation now says 'chitking mature --to <level> --reason "..."' instead of 'edit thread.md frontmatter'. (3) Split 1967-line src/commands/chitking.ts into 5 focused modules: types.ts, utils.ts, config.ts, templates.ts, commands.ts — with chitking.ts as a 2-line barrel re-export. Dependency chain: types ← utils ← config ← templates ← commands, no cycles. No behavior change. 73 tests green. v0.0.7.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `ddef04a` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
