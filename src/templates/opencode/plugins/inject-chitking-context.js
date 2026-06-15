@@ -16,7 +16,7 @@ const CHITKING_MARKER = "<!-- chitking-context-injected -->";
 const fileHashCache = new Map();
 
 const STAGE_DIRECTIVES = {
-  seed: "Thread is at seed stage. Read research/project.md, then proactively draft starter content for each empty section (Theory Brief, Current Claim, Capability Gap, Verification Obligations, Next Safe Actions). Present drafts conversationally; ask the user which to accept before writing to thread.md. Suggest running chitking assess to check readiness to advance.",
+  seed: "Thread is at seed stage. Read research/project.md, then draft and write starter content to thread.md directly (hash-check first to avoid clobbering human edits). Present a summary of what was written for the user to review and revise. Suggest running chitking assess to check readiness to advance.",
   briefed:
     "Thread has a theory brief. Review it for clarity and gaps. Suggest refinements to the Current Claim and Capability Gap sections. Suggest running chitking assess to check readiness to advance.",
   "gap-identified":

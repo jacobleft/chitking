@@ -22,4 +22,4 @@ chitking orient
 chitking dispatch
 ```
 
-The important committed files to inspect are `research/project.md` and `research/contact-stability/thread.md`. The local `.chitking/`, `.opencode/`, and `.codex/` directories created by `chitking init` remain untracked in this demo. Humans own maturity, readiness, and source-of-truth decisions.
+The important committed files to inspect are `research/project.md` and `research/contact-stability/thread.md`. The local `.chitking/`, `.opencode/`, and `.codex/` directories created by `chitking init` remain untracked in this demo. Stage/readiness/maturity transitions are human-owned. Thread.md content is co-owned by agent and human.

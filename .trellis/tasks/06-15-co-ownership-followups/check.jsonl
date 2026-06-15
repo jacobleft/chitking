@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/guides/chitking-product-doctrine.md", "reason": "Product doctrine — verify co-ownership language is consistent across plugin, docs, and doctrine"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Quality bar — verify tests, lint, build all pass"}

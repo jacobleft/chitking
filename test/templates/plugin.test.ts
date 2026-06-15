@@ -104,7 +104,7 @@ describe("buildActiveDirective", () => {
 
     expect(breadcrumb).toContain("Active Chitking thread: demo-thread");
     expect(breadcrumb).toContain("Stage: seed");
-    expect(breadcrumb).toContain("Thread is at seed stage");
+    expect(breadcrumb).toContain("hash-check first");
     expect(breadcrumb).not.toContain("changed since last turn");
     rmSync(dir, { recursive: true, force: true });
   });

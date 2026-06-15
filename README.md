@@ -30,6 +30,10 @@ Currently migrated:
 
 Remaining Chitking runtime commands: none from the legacy bridge scope.
 
+## Research Lifecycle
+
+Threads advance through circular stages (seed → briefed → gap-identified → specified → verification-planned → implementation-ready → evidence-recorded → synthesis-ready → loop back to seed). Each stage has a per-stage readiness gate (1-5, resets on `step`). A separate whole-thread maturity (nascent → developing → established → mature) tracks holistic quality. Run `chitking assess` to evaluate content against configurable criteria, and `chitking iterate <title>` to archive the current thread and start a new cycle.
+
 ## Development
 
 ```bash
