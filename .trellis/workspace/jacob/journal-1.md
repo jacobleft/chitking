@@ -370,3 +370,36 @@ Redesigned plugin breadcrumb output: all stages shown with current in [brackets]
 ### Next Steps
 
 - None - task complete
+
+
+## Session 12: chitking mature command + E2E lifecycle CI test
+
+**Date**: 2026-06-15
+**Task**: chitking mature command + E2E lifecycle CI test
+**Branch**: `main`
+
+### Summary
+
+Two deliverables: (1) chitking mature --to <level> --reason <text> command for whole-thread maturity transitions — closes the gap so every state transition (stage, readiness, maturity) now has an explicit command. Validates against config.maturity_levels, requires --reason, appends to history, auto-dispatches. (2) E2E lifecycle CI test (test/e2e/lifecycle.test.ts) simulates full research lifecycle: init → new → fill sections → assess → step through all 8 stages → loop-back to seed → mature to developing → iterate to new thread with predecessor. Verifies frontmatter state, readiness resets, cycle-complete history, predecessor field, archived old thread. 73 tests green. v0.0.6.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `55b386d` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
