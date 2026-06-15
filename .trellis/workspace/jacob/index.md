@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 8
+- **Total Sessions**: 9
 - **Last Active**: 2026-06-15
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~272 | Active |
+| `journal-1.md` | ~306 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 9 | 2026-06-15 | Always-active plugin + hash reload + doctrine co-ownership update | `b007c2e`, `a92ed2a` | `main` |
 | 8 | 2026-06-15 | Assess and iterate commands + circular model + proactive guidance design | `e547726`, `3d9fc45` | `main` |
 | 7 | 2026-06-15 | Circular maturity model: stage/readiness/maturity redesign | `e547726` | `main` |
 | 6 | 2026-06-15 | Auto-bump patch version on every feature | `c5df90f` | `main` |

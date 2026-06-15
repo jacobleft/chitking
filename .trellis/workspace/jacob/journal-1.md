@@ -270,3 +270,37 @@ Three tasks this session: (1) Brainstormed proactive-new-guidance, archived as d
 ### Next Steps
 
 - None - task complete
+
+
+## Session 9: Always-active plugin + hash reload + doctrine co-ownership update
+
+**Date**: 2026-06-15
+**Task**: Always-active plugin + hash reload + doctrine co-ownership update
+**Branch**: `main`
+
+### Summary
+
+Final piece of the proactive-guidance design: always-active plugin directive replaces passive breadcrumb with stage-appropriate guidance (seed through synthesis-ready). Hash-based file change detection for thread.md/project.md/active.yaml warns agent when files change between turns. CHITKING_PROACTIVE=0 opt-out. Checker fixed active.yaml warning text to match PRD + tightened test assertions. 66 tests green. v0.0.4. Also updated product doctrine: thread.md is now co-owned by agent and human (not human-only). Agents may write section content but must hash-check first and never implicitly overwrite human edits. The plugin itself stays read-only (observer); the agent is the co-author.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `b007c2e` | (see git log) |
+| `a92ed2a` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
