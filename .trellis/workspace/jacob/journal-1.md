@@ -236,3 +236,37 @@ Replaced linear maturity_ladder with circular research lifecycle. Renamed frontm
 ### Next Steps
 
 - None - task complete
+
+
+## Session 8: Assess and iterate commands + circular model + proactive guidance design
+
+**Date**: 2026-06-15
+**Task**: Assess and iterate commands + circular model + proactive guidance design
+**Branch**: `main`
+
+### Summary
+
+Three tasks this session: (1) Brainstormed proactive-new-guidance, archived as design record after scope grew to circular model redesign + always-active plugin + hash reload. (2) Circular maturity model: renamed maturity→stage (circle position), added holistic maturity field (nascent/developing/established/mature), readiness resets per-stage, step loops at synthesis-ready. Config: maturity_ladder→stages, readiness_thresholds→stage_advancement, min_maturity→min_stage, added maturity_levels. Backward compat for old keys. Checker fixed 7 issues incl 1 critical YAML indent bug. v0.0.2. (3) Assess + iterate commands: assess reads thread body against configurable stage_criteria/maturity_criteria from config, prints pass/fail + recommendations (read-only). Iterate archives active thread + creates new with predecessor link. Checker caught cross-layer --no-dispatch bug affecting 5 commands. v0.0.3. 55 tests green. Remaining follow-up: always-active plugin directive + hash-based reload.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e547726` | (see git log) |
+| `3d9fc45` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
