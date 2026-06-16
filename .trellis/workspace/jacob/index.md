@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 15
+- **Total Sessions**: 16
 - **Last Active**: 2026-06-16
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~504 | Active |
+| `journal-1.md` | ~537 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 16 | 2026-06-16 | Fix session-start injection: sessionID tracking | HEAD~0 | `main` |
 | 15 | 2026-06-16 | Session-start injection + response style directive | HEAD~0 | `main` |
 | 14 | 2026-06-15 | Redesign orient + show output: whole-picture, no clustering | HEAD~0 | `main` |
 | 13 | 2026-06-15 | Cleanup + refactor: dup ck-step, assess→mature, module split | `ddef04a` | `main` |

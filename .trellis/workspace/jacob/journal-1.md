@@ -502,3 +502,36 @@ First chat turn now injects rich <chitking-session-start> block: full workflow o
 ### Next Steps
 
 - None - task complete
+
+
+## Session 16: Fix session-start injection: sessionID tracking
+
+**Date**: 2026-06-16
+**Task**: Fix session-start injection: sessionID tracking
+**Branch**: `main`
+
+### Summary
+
+Fixed broken session-start injection. Was using fileHashCache.size === 0 (process-lifetime, fires once ever) instead of per-session tracking. Now uses input.sessionID + Set<string> of processed sessions, matching Trellis pattern. Added event hook for session.compacted to reset on compaction. buildActiveDirective now accepts {isFirstTurn} option. 75 tests green. v0.0.10.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `HEAD~0` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
