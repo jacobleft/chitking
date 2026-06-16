@@ -535,3 +535,36 @@ Fixed broken session-start injection. Was using fileHashCache.size === 0 (proces
 ### Next Steps
 
 - None - task complete
+
+
+## Session 17: Fix init: generate .opencode/package.json with type:module
+
+**Date**: 2026-06-16
+**Task**: Fix init: generate .opencode/package.json with type:module
+**Branch**: `main`
+
+### Summary
+
+Fixed: chitking init now generates .opencode/package.json with type:module + @opencode-ai/plugin dependency. Without this, OpenCode silently fails to load the ESM plugin. Used writeFileIfMissing to preserve on re-init. Tests verify existence and content. 75 tests green. v0.0.11.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `HEAD~0` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
