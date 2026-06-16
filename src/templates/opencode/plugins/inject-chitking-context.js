@@ -395,13 +395,69 @@ function formatReadinessLine(thread, config) {
   return `Readiness: ${readiness}/5 — need ≥${threshold} to advance to ${nextStage} ${isReady ? "✓ ready" : "✗ not ready"}`;
 }
 
+function buildSessionStartBlock(state, warnings) {
+  const isProactive = process.env.CHITKING_PROACTIVE !== "0";
+
+  const sections = ["<chitking-session-start>"];
+
+  if (isProactive) {
+    sections.push(
+      "Chitking research workflow: threads advance through circular stages",
+      "(seed → briefed → gap-identified → specified → verification-planned →",
+      "implementation-ready → evidence-recorded → synthesis-ready → loop to seed).",
+      "Readiness (1-5) is a per-stage gate that resets on step.",
+      "Maturity (nascent/developing/established/mature) tracks whole-thread quality.",
+      "Commands: orient (status), assess (evaluate), step (advance stage), mature",
+      "(update maturity), dispatch (role packets), record (evidence), iterate (new cycle).",
+      "Thread.md is co-owned by agent and human — write directly, hash-check first.",
+      "",
+    );
+  }
+
+  sections.push(
+    `Thread: ${state.activeThread}`,
+    `Stages: ${formatStageProgression(state.config.stages || [], state.thread.stage)}`,
+    formatReadinessLine(state.thread, state.config),
+    `Maturity: ${state.thread.maturity} (whole-thread quality)`,
+    "",
+  );
+
+  if (isProactive) {
+    sections.push(
+      "Response style: when communicating about this thread, focus on the whole",
+      "picture — current stage, readiness status, and concrete next steps. Avoid",
+      "clustering by warnings/boundaries. Be direct and actionable. Present",
+      "suggestions as a unified flow, not separate sections.",
+      "",
+    );
+  }
+
+  if (warnings.length > 0) {
+    sections.push(...warnings, "");
+  }
+
+  if (isProactive) {
+    sections.push(
+      "For full workflow docs: .opencode/skills/chitking-workflow/SKILL.md",
+    );
+  }
+
+  sections.push("</chitking-session-start>");
+  return sections.join("\n");
+}
+
 function buildActiveDirective(directory) {
   const state = loadChitkingState(directory);
   if (state.missing) {
     return `<chitking-breadcrumb>\nChitking repo detected. ${state.missing}\nSafe next action: inspect research/project.md, then create/focus a thread.\n</chitking-breadcrumb>`;
   }
 
+  const isFirstTurn = fileHashCache.size === 0;
   const warnings = detectFileChanges(directory, state.threadPath);
+
+  if (isFirstTurn) {
+    return buildSessionStartBlock(state, warnings);
+  }
 
   const sections = [
     "<chitking-breadcrumb>",

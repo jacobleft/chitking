@@ -389,7 +389,10 @@ project_incomplete_markers:
 
     const chatOutput = { parts: [{ type: "text", text: "user request" }] };
     await hooks["chat.message"]({ agent: "main" }, chatOutput);
-    expect(chatOutput.parts[0].text).toContain("<chitking-breadcrumb>");
+    expect(chatOutput.parts[0].text).toContain("<chitking-session-start>");
+    expect(chatOutput.parts[0].text).toContain(
+      "Chitking research workflow: threads advance through circular stages",
+    );
     expect(chatOutput.parts[0].text).toContain("Thread: contact-stability");
     expect(chatOutput.parts[0].text).toContain("Stages: [seed] → briefed");
     expect(chatOutput.parts[0].text).toContain("→ (loop)");
@@ -399,7 +402,9 @@ project_incomplete_markers:
     expect(chatOutput.parts[0].text).toContain(
       "Maturity: nascent (whole-thread quality)",
     );
-    expect(chatOutput.parts[0].text).toContain("Next: Thread is at seed stage");
+    expect(chatOutput.parts[0].text).toContain(
+      "Response style: when communicating about this thread",
+    );
     expect(chatOutput.parts[0].text).toContain("user request");
 
     const roleChatOutput = { parts: [{ type: "text", text: "role turn" }] };

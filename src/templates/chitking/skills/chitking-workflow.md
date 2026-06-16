@@ -34,7 +34,7 @@ Humans own research direction, stage, maturity, and readiness checkpoints. Agent
 - `chitking archive <thread> --yes` marks a thread archived and removes it from normal list/focus behavior. The explicit `--yes` is required because this hides active durable research state from the normal workflow.
 - `chitking restore <thread>` restores an archived thread. It does not require `--yes` because it is an undo/recovery operation.
 - `chitking delete <thread> --yes` removes the thread's durable `research/<thread>/` directory. The explicit `--yes` is required; never delete a thread unless the user clearly requested deletion.
-- `chitking orient` reads the active thread, source files, config, generated packets, and Git activity to summarize stage, maturity, readiness, blockers, stale packets, risky roles, and next safe actions. Use it to orient; do not treat it as permission to mutate files.
+- `chitking orient` reads the active thread, source files, config, generated packets, and Git activity to summarize stage progression, readiness, maturity, issues, and next steps. Use it to orient; do not treat it as permission to mutate files.
 - `chitking assess [thread]` evaluates structural criteria against config and prints readiness-to-advance and maturity recommendations. It is read-only and recommend-only; humans must apply any changes with `chitking step` or by editing frontmatter.
 - `chitking step` changes stage/readiness and records the reason in `thread.md`. Because humans own stage/readiness, only run or emulate this command when explicitly instructed by the user or calling workflow.
 - `chitking mature --to <level> --reason "..."` updates whole-thread maturity and records the reason in `thread.md`. Because humans own maturity transitions, only run or emulate this command when explicitly instructed by the user or calling workflow.
@@ -49,3 +49,11 @@ Humans own research direction, stage, maturity, and readiness checkpoints. Agent
 4. Treat generated context packets as cache. Regenerate them with `chitking dispatch` when stale rather than editing them by hand.
 5. Respect role contracts and stop conditions before acting as a specialized Chitking role.
 6. Ask before changing source-of-truth files or thread lifecycle state unless the user explicitly requested that change.
+
+## Response Style
+
+When communicating with users about Chitking threads:
+- Focus on the whole picture: current stage, readiness status, and concrete next steps.
+- Avoid clustering by warnings/boundaries. Present a unified flow.
+- Be direct and actionable. Suggest commands to run, not just describe problems.
+- The agent is always active — proactively guide, don't wait to be asked.

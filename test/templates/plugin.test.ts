@@ -116,12 +116,16 @@ describe("buildActiveDirective", () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
-  it("shows the whole-picture breadcrumb on the first turn", async () => {
+  it("shows the session-start block on the first turn", async () => {
     const { buildActiveDirective } = await loadPlugin();
     const dir = createTempRepo("seed", 1);
 
     const breadcrumb = buildActiveDirective(dir);
 
+    expect(breadcrumb).toContain("<chitking-session-start>");
+    expect(breadcrumb).toContain("</chitking-session-start>");
+    expect(breadcrumb).toContain("Chitking research workflow: threads advance through circular stages");
+    expect(breadcrumb).toContain("Response style: when communicating about this thread");
     expect(breadcrumb).toContain("Thread: demo-thread");
     expect(breadcrumb).toContain("Stages: [seed] → briefed");
     expect(breadcrumb).toContain("→ (loop)");
@@ -129,10 +133,48 @@ describe("buildActiveDirective", () => {
       "Readiness: 1/5 — need ≥1 to advance to briefed ✓ ready",
     );
     expect(breadcrumb).toContain("Maturity: nascent (whole-thread quality)");
-    expect(breadcrumb).toContain("Next: Thread is at seed stage");
+    expect(breadcrumb).toContain(
+      "For full workflow docs: .opencode/skills/chitking-workflow/SKILL.md",
+    );
+    expect(breadcrumb).not.toContain("<chitking-breadcrumb>");
+    expect(breadcrumb).not.toContain("Next:");
     expect(breadcrumb).not.toContain("changed since last turn");
     // Old flat metadata line is gone.
     expect(breadcrumb).not.toContain("Stage: seed | Maturity:");
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("subsequent turns inject breadcrumb not session-start", async () => {
+    const { buildActiveDirective } = await loadPlugin();
+    const dir = createTempRepo("seed", 1);
+
+    const first = buildActiveDirective(dir);
+    const second = buildActiveDirective(dir);
+
+    expect(first).toContain("<chitking-session-start>");
+    expect(second).toContain("<chitking-breadcrumb>");
+    expect(second).not.toContain("<chitking-session-start>");
+    expect(second).toContain("Next: Thread is at seed stage");
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("CHITKING_PROACTIVE=0 on first turn omits workflow overview", async () => {
+    process.env.CHITKING_PROACTIVE = "0";
+    const { buildActiveDirective } = await loadPlugin();
+    const dir = createTempRepo("seed", 1);
+
+    const breadcrumb = buildActiveDirective(dir);
+
+    expect(breadcrumb).toContain("<chitking-session-start>");
+    expect(breadcrumb).toContain("Thread: demo-thread");
+    expect(breadcrumb).toContain("Maturity: nascent (whole-thread quality)");
+    expect(breadcrumb).not.toContain(
+      "Chitking research workflow: threads advance through circular stages",
+    );
+    expect(breadcrumb).not.toContain("Response style:");
+    expect(breadcrumb).not.toContain(
+      "For full workflow docs: .opencode/skills/chitking-workflow/SKILL.md",
+    );
     rmSync(dir, { recursive: true, force: true });
   });
 
@@ -229,10 +271,11 @@ describe("buildActiveDirective", () => {
     const { buildActiveDirective } = await loadPlugin();
     const dir = createTempRepo("synthesis-ready", 5);
 
+    const first = buildActiveDirective(dir);
     const breadcrumb = buildActiveDirective(dir);
 
-    expect(breadcrumb).toContain("[synthesis-ready]");
-    expect(breadcrumb).toContain(
+    expect(first).toContain("[synthesis-ready]");
+    expect(first).toContain(
       "Readiness: 5/5 — ready to loop back to seed ✓",
     );
     expect(breadcrumb).toContain("Next: Thread is ready for synthesis");
