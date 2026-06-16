@@ -568,3 +568,37 @@ Fixed: chitking init now generates .opencode/package.json with type:module + @op
 ### Next Steps
 
 - None - task complete
+
+
+## Session 18: Fix plugin named exports + init package.json + sessionID tracking
+
+**Date**: 2026-06-16
+**Task**: Fix plugin named exports + init package.json + sessionID tracking
+**Branch**: `main`
+
+### Summary
+
+Three fixes for broken plugin loading: (1) chitking init now generates .opencode/package.json with type:module. (2) Removed named exports from plugin — OpenCode loader expects only export default, named exports caused 'Plugin export is not a function' error. (3) Session-start detection fixed earlier: uses input.sessionID + Set instead of fileHashCache.size. Plugin tests rewritten as integration-style (factory→hooks→chat.message). Rible.jl re-initialized with fix. v0.0.12. 67 tests green.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `74b21f3` | (see git log) |
+| `add8f40` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
