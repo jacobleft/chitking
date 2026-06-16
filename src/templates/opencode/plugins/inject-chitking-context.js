@@ -525,8 +525,6 @@ function prependTextPart(output, text) {
   }
 }
 
-export { computeHash, STAGE_DIRECTIVES, buildActiveDirective };
-
 export default async ({ directory }) => {
   return {
     "tool.execute.before": async (input, output) => {
@@ -570,7 +568,10 @@ export default async ({ directory }) => {
           return;
         const sessionID = input?.sessionID || "default";
         const isFirstTurn = !processedSessions.has(sessionID);
-        prependTextPart(output, buildActiveDirective(directory, { isFirstTurn }));
+        prependTextPart(
+          output,
+          buildActiveDirective(directory, { isFirstTurn }),
+        );
         if (isFirstTurn) {
           processedSessions.add(sessionID);
         }
@@ -581,7 +582,10 @@ export default async ({ directory }) => {
 
     event: ({ event }) => {
       try {
-        if (event?.type === "session.compacted" && event?.properties?.sessionID) {
+        if (
+          event?.type === "session.compacted" &&
+          event?.properties?.sessionID
+        ) {
           processedSessions.delete(event.properties.sessionID);
         }
       } catch {

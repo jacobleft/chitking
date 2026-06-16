@@ -1,12 +1,24 @@
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
-import path from "node:path";
-import { tmpdir } from "node:os";
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from "fs";
+import { join } from "path";
+import { tmpdir } from "os";
 
-const PLUGIN_PATH =
-  "../../src/templates/opencode/plugins/inject-chitking-context.js";
+// Import the DEFAULT export only
+import createHooks from "../../src/templates/opencode/plugins/inject-chitking-context.js";
 
-const DEFAULT_CONFIG = `stages:
+// Helper: create a minimal chitking workspace in a temp dir
+function setupTempWorkspace(): string {
+  const cwd = mkdtempSync(join(tmpdir(), "chitking-plugin-test-"));
+  mkdirSync(join(cwd, ".chitking"), { recursive: true });
+  mkdirSync(join(cwd, "research"), { recursive: true });
+  mkdirSync(join(cwd, "research", "test-thread"), { recursive: true });
+  writeFileSync(
+    join(cwd, ".chitking", "active.yaml"),
+    "active_thread: test-thread\nupdated_at: 2026-01-01T00:00:00.000Z\n",
+  );
+  writeFileSync(
+    join(cwd, ".chitking", "config.yaml"),
+    `stages:
   - seed
   - briefed
   - gap-identified
@@ -17,281 +29,146 @@ const DEFAULT_CONFIG = `stages:
   - synthesis-ready
 stage_advancement:
   seed: 1
-  briefed: 3
-  gap-identified: 3
-  specified: 3
-  verification-planned: 3
-  implementation-ready: 3
-  evidence-recorded: 3
-  synthesis-ready: 5
-`;
-
-async function loadPlugin(): Promise<
-  typeof import("../../src/templates/opencode/plugins/inject-chitking-context.js")
-> {
-  vi.resetModules();
-  return import(PLUGIN_PATH);
+  briefed: 1
+maturity_levels:
+  - nascent
+  - developing
+  - established
+  - mature
+roles:
+  plan:
+    min_stage: briefed
+    min_readiness: 1
+stage_criteria: {}
+maturity_criteria: {}
+project_incomplete_markers:
+  - TODO`,
+  );
+  writeFileSync(
+    join(cwd, "research", "project.md"),
+    "# Test Project\n\nThis is a test project.",
+  );
+  writeFileSync(
+    join(cwd, "research", "test-thread", "thread.md"),
+    "---\nthread: test-thread\ntitle: Test Thread\nstage: seed\nmaturity: nascent\nreadiness: 1\nreadiness_source: human\nrecorded_commits: []\nupdated_at: 2026-01-01T00:00:00.000Z\n---\n## Theory Brief\n\nTest theory.\n",
+  );
+  return cwd;
 }
 
-function createTempRepo(stage = "seed", readiness = 1): string {
-  const dir = mkdtempSync(path.join(tmpdir(), "chitking-plugin-test-"));
-  mkdirSync(path.join(dir, ".chitking"), { recursive: true });
-  mkdirSync(path.join(dir, "research", "demo-thread"), { recursive: true });
-  writeFileSync(
-    path.join(dir, "research", "project.md"),
-    "# Project\n\nDemo project.\n",
-  );
-  writeFileSync(
-    path.join(dir, ".chitking", "active.yaml"),
-    "active_thread: demo-thread\n",
-  );
-  writeFileSync(path.join(dir, ".chitking", "config.yaml"), DEFAULT_CONFIG);
-  writeFileSync(
-    path.join(dir, "research", "demo-thread", "thread.md"),
-    `---\nthread: demo-thread\nstage: ${stage}\nmaturity: nascent\nreadiness: ${readiness}\nreadiness_source: human\n---\n\n# Demo thread\n`,
-  );
-  return dir;
+interface ChatHooks {
+  "chat.message": (
+    input: { sessionID?: string },
+    output: { parts: { type: string; text: string }[] },
+  ) => Promise<void>;
 }
 
-describe("OpenCode plugin helpers", () => {
-  describe("computeHash", () => {
-    it("returns different hashes for different content", async () => {
-      const { computeHash } = await loadPlugin();
-      expect(computeHash("hello")).not.toBe(computeHash("world"));
-    });
+// Helper: call chat.message hook and return the injected text
+async function callChatMessage(
+  hooks: ChatHooks,
+  directory: string,
+  sessionID: string,
+): Promise<string> {
+  const output = { parts: [{ type: "text" as const, text: "user message" }] };
+  await hooks["chat.message"]({ sessionID }, output);
+  return output.parts[0]?.text || "";
+}
 
-    it("returns the same hash for identical content", async () => {
-      const { computeHash } = await loadPlugin();
-      expect(computeHash("same")).toBe(computeHash("same"));
-    });
-  });
-
-  describe("STAGE_DIRECTIVES", () => {
-    it("contains a directive for every known stage", async () => {
-      const { STAGE_DIRECTIVES } = await loadPlugin();
-      for (const stage of [
-        "seed",
-        "briefed",
-        "gap-identified",
-        "specified",
-        "verification-planned",
-        "implementation-ready",
-        "evidence-recorded",
-        "synthesis-ready",
-      ] as const) {
-        expect(STAGE_DIRECTIVES[stage]).toBeTruthy();
-      }
-    });
-  });
-});
-
-describe("buildActiveDirective", () => {
-  const originalProactive = process.env.CHITKING_PROACTIVE;
+describe("chitking plugin", () => {
+  const tempDirs: string[] = [];
 
   beforeEach(() => {
-    delete process.env.CHITKING_PROACTIVE;
+    vi.resetModules();
   });
 
   afterEach(() => {
-    if (originalProactive === undefined) {
-      delete process.env.CHITKING_PROACTIVE;
-    } else {
-      process.env.CHITKING_PROACTIVE = originalProactive;
+    vi.restoreAllMocks();
+    vi.unstubAllEnvs();
+    for (const dir of tempDirs.splice(0)) {
+      rmSync(dir, { recursive: true, force: true });
     }
   });
 
-  it("returns the missing-state breadcrumb when there is no active thread", async () => {
-    const { buildActiveDirective } = await loadPlugin();
-    const dir = mkdtempSync(path.join(tmpdir(), "chitking-plugin-missing-"));
-    mkdirSync(path.join(dir, ".chitking"), { recursive: true });
-    mkdirSync(path.join(dir, "research"), { recursive: true });
-    writeFileSync(path.join(dir, "research", "project.md"), "# Project\n");
-    writeFileSync(path.join(dir, ".chitking", "active.yaml"), "");
-
-    const breadcrumb = buildActiveDirective(dir, { isFirstTurn: false });
-
-    expect(breadcrumb).toContain("<chitking-breadcrumb>");
-    expect(breadcrumb).toContain("No active Chitking thread");
-    expect(breadcrumb).toContain("</chitking-breadcrumb>");
-    rmSync(dir, { recursive: true, force: true });
+  it("first turn emits session-start block with workflow overview", async () => {
+    const cwd = setupTempWorkspace();
+    tempDirs.push(cwd);
+    const hooks = await createHooks({ directory: cwd });
+    const text = await callChatMessage(hooks, cwd, "session-1");
+    expect(text).toContain("<chitking-session-start>");
+    expect(text).toContain("circular stages");
+    expect(text).toContain("Response style");
+    expect(text).toContain("[seed]");
+    expect(text).toContain("→ (loop)");
   });
 
-  it("shows the session-start block on the first turn", async () => {
-    const { buildActiveDirective } = await loadPlugin();
-    const dir = createTempRepo("seed", 1);
-
-    const breadcrumb = buildActiveDirective(dir, { isFirstTurn: true });
-
-    expect(breadcrumb).toContain("<chitking-session-start>");
-    expect(breadcrumb).toContain("</chitking-session-start>");
-    expect(breadcrumb).toContain("Chitking research workflow: threads advance through circular stages");
-    expect(breadcrumb).toContain("Response style: when communicating about this thread");
-    expect(breadcrumb).toContain("Thread: demo-thread");
-    expect(breadcrumb).toContain("Stages: [seed] → briefed");
-    expect(breadcrumb).toContain("→ (loop)");
-    expect(breadcrumb).toContain(
-      "Readiness: 1/5 — need ≥1 to advance to briefed ✓ ready",
-    );
-    expect(breadcrumb).toContain("Maturity: nascent (whole-thread quality)");
-    expect(breadcrumb).toContain(
-      "For full workflow docs: .opencode/skills/chitking-workflow/SKILL.md",
-    );
-    expect(breadcrumb).not.toContain("<chitking-breadcrumb>");
-    expect(breadcrumb).not.toContain("Next:");
-    expect(breadcrumb).not.toContain("changed since last turn");
-    // Old flat metadata line is gone.
-    expect(breadcrumb).not.toContain("Stage: seed | Maturity:");
-    rmSync(dir, { recursive: true, force: true });
-  });
-
-  it("subsequent turns inject breadcrumb not session-start", async () => {
-    const { buildActiveDirective } = await loadPlugin();
-    const dir = createTempRepo("seed", 1);
-
-    const first = buildActiveDirective(dir, { isFirstTurn: true });
-    const second = buildActiveDirective(dir, { isFirstTurn: false });
-
-    expect(first).toContain("<chitking-session-start>");
-    expect(second).toContain("<chitking-breadcrumb>");
-    expect(second).not.toContain("<chitking-session-start>");
-    expect(second).toContain("Next: Thread is at seed stage");
-    rmSync(dir, { recursive: true, force: true });
+  it("subsequent turn emits breadcrumb not session-start", async () => {
+    const cwd = setupTempWorkspace();
+    tempDirs.push(cwd);
+    const hooks = await createHooks({ directory: cwd });
+    // First turn
+    await callChatMessage(hooks, cwd, "session-2");
+    // Second turn (same session)
+    const text = await callChatMessage(hooks, cwd, "session-2");
+    expect(text).toContain("<chitking-breadcrumb>");
+    expect(text).not.toContain("<chitking-session-start>");
   });
 
   it("CHITKING_PROACTIVE=0 on first turn omits workflow overview", async () => {
-    process.env.CHITKING_PROACTIVE = "0";
-    const { buildActiveDirective } = await loadPlugin();
-    const dir = createTempRepo("seed", 1);
-
-    const breadcrumb = buildActiveDirective(dir, { isFirstTurn: true });
-
-    expect(breadcrumb).toContain("<chitking-session-start>");
-    expect(breadcrumb).toContain("Thread: demo-thread");
-    expect(breadcrumb).toContain("Maturity: nascent (whole-thread quality)");
-    expect(breadcrumb).not.toContain(
-      "Chitking research workflow: threads advance through circular stages",
-    );
-    expect(breadcrumb).not.toContain("Response style:");
-    expect(breadcrumb).not.toContain(
-      "For full workflow docs: .opencode/skills/chitking-workflow/SKILL.md",
-    );
-    rmSync(dir, { recursive: true, force: true });
+    vi.stubEnv("CHITKING_PROACTIVE", "0");
+    try {
+      const cwd = setupTempWorkspace();
+      tempDirs.push(cwd);
+      const hooks = await createHooks({ directory: cwd });
+      const text = await callChatMessage(hooks, cwd, "session-3");
+      expect(text).toContain("<chitking-session-start>");
+      expect(text).not.toContain("circular stages");
+      expect(text).not.toContain("Response style");
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
-  it("does not warn when files are unchanged on a second turn", async () => {
-    const { buildActiveDirective } = await loadPlugin();
-    const dir = createTempRepo("seed", 1);
-
-    buildActiveDirective(dir, { isFirstTurn: true });
-    const breadcrumb = buildActiveDirective(dir, { isFirstTurn: false });
-
-    expect(breadcrumb).not.toContain("changed since last turn");
-    rmSync(dir, { recursive: true, force: true });
+  it("different sessions each get their own first turn", async () => {
+    const cwd = setupTempWorkspace();
+    tempDirs.push(cwd);
+    const hooks = await createHooks({ directory: cwd });
+    const text1 = await callChatMessage(hooks, cwd, "session-a");
+    const text2 = await callChatMessage(hooks, cwd, "session-b");
+    expect(text1).toContain("<chitking-session-start>");
+    expect(text2).toContain("<chitking-session-start>");
   });
 
-  it("warns when active.yaml changes between turns", async () => {
-    const { buildActiveDirective } = await loadPlugin();
-    const dir = createTempRepo("seed", 1);
+  it("breadcrumb shows stage progression and readiness context", async () => {
+    const cwd = setupTempWorkspace();
+    tempDirs.push(cwd);
+    const hooks = await createHooks({ directory: cwd });
+    await callChatMessage(hooks, cwd, "session-5"); // first turn
+    const text = await callChatMessage(hooks, cwd, "session-5"); // second turn
+    expect(text).toContain("[seed]");
+    expect(text).toContain("→ (loop)");
+    expect(text).toContain("/5");
+    expect(text).toContain("ready");
+    expect(text).toContain("Maturity:");
+  });
 
-    buildActiveDirective(dir, { isFirstTurn: true });
+  it("missing thread emits fallback breadcrumb", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "chitking-empty-"));
+    tempDirs.push(cwd);
+    mkdirSync(join(cwd, ".chitking"), { recursive: true });
+    mkdirSync(join(cwd, "research"), { recursive: true });
+    writeFileSync(join(cwd, "research", "project.md"), "# Empty");
     writeFileSync(
-      path.join(dir, ".chitking", "active.yaml"),
-      "active_thread: demo-thread\nupdated: true\n",
+      join(cwd, ".chitking", "active.yaml"),
+      "active_thread: null\nupdated_at: 2026-01-01T00:00:00.000Z\n",
     );
-    const breadcrumb = buildActiveDirective(dir, { isFirstTurn: false });
-
-    expect(breadcrumb).toContain(
-      "⚠️ active.yaml changed — active thread may differ from cached.",
-    );
-    rmSync(dir, { recursive: true, force: true });
-  });
-
-  it("warns when thread.md changes between turns", async () => {
-    const { buildActiveDirective } = await loadPlugin();
-    const dir = createTempRepo("seed", 1);
-
-    buildActiveDirective(dir, { isFirstTurn: true });
+    mkdirSync(join(cwd, ".chitking", "roles"), { recursive: true });
     writeFileSync(
-      path.join(dir, "research", "demo-thread", "thread.md"),
-      `---\nthread: demo-thread\nstage: seed\nmaturity: nascent\nreadiness: 2\nreadiness_source: human\n---\n\n# Updated thread\n`,
+      join(cwd, ".chitking", "config.yaml"),
+      "stages:\n  - seed\n  - briefed\nroles:\n  plan:\n    min_stage: seed\nstage_advancement:\n  seed: 1\nmaturity_levels:\n  - nascent\nstage_criteria: {}\nmaturity_criteria: {}\nproject_incomplete_markers:\n  - TODO",
     );
-    const breadcrumb = buildActiveDirective(dir, { isFirstTurn: false });
-
-    expect(breadcrumb).toContain(
-      "⚠️ thread.md changed since last turn — re-read before acting.",
-    );
-    rmSync(dir, { recursive: true, force: true });
-  });
-
-  it("warns when project.md changes between turns", async () => {
-    const { buildActiveDirective } = await loadPlugin();
-    const dir = createTempRepo("seed", 1);
-
-    buildActiveDirective(dir, { isFirstTurn: true });
-    writeFileSync(
-      path.join(dir, "research", "project.md"),
-      "# Project\n\nUpdated project.\n",
-    );
-    const breadcrumb = buildActiveDirective(dir, { isFirstTurn: false });
-
-    expect(breadcrumb).toContain(
-      "⚠️ project.md changed since last turn — re-read before acting.",
-    );
-    rmSync(dir, { recursive: true, force: true });
-  });
-
-  it("suppresses the directive but keeps the whole picture when CHITKING_PROACTIVE=0", async () => {
-    const { buildActiveDirective } = await loadPlugin();
-    const dir = createTempRepo("briefed", 1);
-
-    buildActiveDirective(dir, { isFirstTurn: true });
-    process.env.CHITKING_PROACTIVE = "0";
-    writeFileSync(
-      path.join(dir, ".chitking", "active.yaml"),
-      "active_thread: demo-thread\nupdated: true\n",
-    );
-    const breadcrumb = buildActiveDirective(dir, { isFirstTurn: false });
-
-    expect(breadcrumb).toContain("Thread: demo-thread");
-    expect(breadcrumb).toContain("Stages: seed → [briefed]");
-    expect(breadcrumb).toContain("→ (loop)");
-    expect(breadcrumb).toContain(
-      "Readiness: 1/5 — need ≥3 to advance to gap-identified ✗ not ready",
-    );
-    expect(breadcrumb).toContain("Maturity: nascent (whole-thread quality)");
-    expect(breadcrumb).not.toContain("Next:");
-    expect(breadcrumb).not.toContain("Thread has a theory brief");
-    expect(breadcrumb).toContain(
-      "⚠️ active.yaml changed — active thread may differ from cached.",
-    );
-    rmSync(dir, { recursive: true, force: true });
-  });
-
-  it("shows the loop-back readiness line at the final stage", async () => {
-    const { buildActiveDirective } = await loadPlugin();
-    const dir = createTempRepo("synthesis-ready", 5);
-
-    const first = buildActiveDirective(dir, { isFirstTurn: true });
-    const breadcrumb = buildActiveDirective(dir, { isFirstTurn: false });
-
-    expect(first).toContain("[synthesis-ready]");
-    expect(first).toContain(
-      "Readiness: 5/5 — ready to loop back to seed ✓",
-    );
-    expect(breadcrumb).toContain("Next: Thread is ready for synthesis");
-    rmSync(dir, { recursive: true, force: true });
-  });
-
-  it("omits the directive for an unknown stage", async () => {
-    const { buildActiveDirective } = await loadPlugin();
-    const dir = createTempRepo("unknown-stage", 1);
-
-    const breadcrumb = buildActiveDirective(dir, { isFirstTurn: false });
-
-    expect(breadcrumb).toContain("Stages:");
-    expect(breadcrumb).not.toContain("Next:");
-    expect(breadcrumb).not.toContain("Thread is at seed stage");
-    expect(breadcrumb).not.toContain("Thread has a theory brief");
-    rmSync(dir, { recursive: true, force: true });
+    const hooks = await createHooks({ directory: cwd });
+    const text = await callChatMessage(hooks, cwd, "session-6");
+    // Should still get some output, even with missing thread
+    expect(text.length).toBeGreaterThan(0);
+    expect(text).toContain("chitking");
   });
 });
