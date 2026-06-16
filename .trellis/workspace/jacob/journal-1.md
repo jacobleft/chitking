@@ -602,3 +602,36 @@ Three fixes for broken plugin loading: (1) chitking init now generates .opencode
 ### Next Steps
 
 - None - task complete
+
+
+## Session 19: How-it-works docs + plugin loading fixes
+
+**Date**: 2026-06-16
+**Task**: How-it-works docs + plugin loading fixes
+**Branch**: `main`
+
+### Summary
+
+Created docs/how-it-works.md (455 lines): comprehensive step-by-step walkthrough of the Chitking research workflow, modeled after Trellis's how-it-works page. Covers session open, plugin injection (session-start + breadcrumb), init/new/step/mature/assess/dispatch/record/iterate, circular stage model, readiness gates, maturity levels, cycle-end options, durable files, and plugin architecture. Also includes all the plugin loading fixes from this session (named exports removal, package.json type:module, sessionID tracking).
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `add8f40` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

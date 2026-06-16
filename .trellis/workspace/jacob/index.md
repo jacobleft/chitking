@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 18
+- **Total Sessions**: 19
 - **Last Active**: 2026-06-16
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~604 | Active |
+| `journal-1.md` | ~637 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 19 | 2026-06-16 | How-it-works docs + plugin loading fixes | `add8f40` | `main` |
 | 18 | 2026-06-16 | Fix plugin named exports + init package.json + sessionID tracking | `74b21f3`, `add8f40` | `main` |
 | 17 | 2026-06-16 | Fix init: generate .opencode/package.json with type:module | HEAD~0 | `main` |
 | 16 | 2026-06-16 | Fix session-start injection: sessionID tracking | HEAD~0 | `main` |
