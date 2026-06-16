@@ -469,3 +469,36 @@ Redesigned chitkingOrient and chitkingShow output to match whole-picture breadcr
 ### Next Steps
 
 - None - task complete
+
+
+## Session 15: Session-start injection + response style directive
+
+**Date**: 2026-06-16
+**Task**: Session-start injection + response style directive
+**Branch**: `main`
+
+### Summary
+
+First chat turn now injects rich <chitking-session-start> block: full workflow overview (circular stages, readiness/maturity model, commands), current thread state (stage progression, readiness X/5, maturity label), and response-style directive (whole-picture, not clustered, always active, suggest commands). Subsequent turns use normal breadcrumb. CHITKING_PROACTIVE=0 suppresses overview+style on first turn. Updated chitking-workflow skill: removed clustering language from orient, added Response Style section. 75 tests green. v0.0.9.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `HEAD~0` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
