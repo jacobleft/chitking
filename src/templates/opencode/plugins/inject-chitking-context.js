@@ -15,6 +15,9 @@ const CHITKING_MARKER = "<!-- chitking-context-injected -->";
 // Module-level, per-session file hash cache for change detection between turns.
 const fileHashCache = new Map();
 
+// Per-session tracking for session-start injection.
+const processedSessions = new Set();
+
 const STAGE_DIRECTIVES = {
   seed: "Thread is at seed stage. Read research/project.md, then draft and write starter content to thread.md directly (hash-check first to avoid clobbering human edits). Present a summary of what was written for the user to review and revise. Suggest running chitking assess to check readiness to advance.",
   briefed:
@@ -446,13 +449,13 @@ function buildSessionStartBlock(state, warnings) {
   return sections.join("\n");
 }
 
-function buildActiveDirective(directory) {
+function buildActiveDirective(directory, options = {}) {
   const state = loadChitkingState(directory);
   if (state.missing) {
     return `<chitking-breadcrumb>\nChitking repo detected. ${state.missing}\nSafe next action: inspect research/project.md, then create/focus a thread.\n</chitking-breadcrumb>`;
   }
 
-  const isFirstTurn = fileHashCache.size === 0;
+  const isFirstTurn = options.isFirstTurn === true;
   const warnings = detectFileChanges(directory, state.threadPath);
 
   if (isFirstTurn) {
@@ -565,9 +568,24 @@ export default async ({ directory }) => {
           /^chitking-[A-Za-z0-9_-]+$/.test(input.agent)
         )
           return;
-        prependTextPart(output, buildActiveDirective(directory));
+        const sessionID = input?.sessionID || "default";
+        const isFirstTurn = !processedSessions.has(sessionID);
+        prependTextPart(output, buildActiveDirective(directory, { isFirstTurn }));
+        if (isFirstTurn) {
+          processedSessions.add(sessionID);
+        }
       } catch {
         // Best-effort breadcrumb only; never block chat turns.
+      }
+    },
+
+    event: ({ event }) => {
+      try {
+        if (event?.type === "session.compacted" && event?.properties?.sessionID) {
+          processedSessions.delete(event.properties.sessionID);
+        }
+      } catch {
+        // Best-effort only.
       }
     },
   };

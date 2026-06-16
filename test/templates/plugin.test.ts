@@ -108,7 +108,7 @@ describe("buildActiveDirective", () => {
     writeFileSync(path.join(dir, "research", "project.md"), "# Project\n");
     writeFileSync(path.join(dir, ".chitking", "active.yaml"), "");
 
-    const breadcrumb = buildActiveDirective(dir);
+    const breadcrumb = buildActiveDirective(dir, { isFirstTurn: false });
 
     expect(breadcrumb).toContain("<chitking-breadcrumb>");
     expect(breadcrumb).toContain("No active Chitking thread");
@@ -120,7 +120,7 @@ describe("buildActiveDirective", () => {
     const { buildActiveDirective } = await loadPlugin();
     const dir = createTempRepo("seed", 1);
 
-    const breadcrumb = buildActiveDirective(dir);
+    const breadcrumb = buildActiveDirective(dir, { isFirstTurn: true });
 
     expect(breadcrumb).toContain("<chitking-session-start>");
     expect(breadcrumb).toContain("</chitking-session-start>");
@@ -148,8 +148,8 @@ describe("buildActiveDirective", () => {
     const { buildActiveDirective } = await loadPlugin();
     const dir = createTempRepo("seed", 1);
 
-    const first = buildActiveDirective(dir);
-    const second = buildActiveDirective(dir);
+    const first = buildActiveDirective(dir, { isFirstTurn: true });
+    const second = buildActiveDirective(dir, { isFirstTurn: false });
 
     expect(first).toContain("<chitking-session-start>");
     expect(second).toContain("<chitking-breadcrumb>");
@@ -163,7 +163,7 @@ describe("buildActiveDirective", () => {
     const { buildActiveDirective } = await loadPlugin();
     const dir = createTempRepo("seed", 1);
 
-    const breadcrumb = buildActiveDirective(dir);
+    const breadcrumb = buildActiveDirective(dir, { isFirstTurn: true });
 
     expect(breadcrumb).toContain("<chitking-session-start>");
     expect(breadcrumb).toContain("Thread: demo-thread");
@@ -182,8 +182,8 @@ describe("buildActiveDirective", () => {
     const { buildActiveDirective } = await loadPlugin();
     const dir = createTempRepo("seed", 1);
 
-    buildActiveDirective(dir);
-    const breadcrumb = buildActiveDirective(dir);
+    buildActiveDirective(dir, { isFirstTurn: true });
+    const breadcrumb = buildActiveDirective(dir, { isFirstTurn: false });
 
     expect(breadcrumb).not.toContain("changed since last turn");
     rmSync(dir, { recursive: true, force: true });
@@ -193,12 +193,12 @@ describe("buildActiveDirective", () => {
     const { buildActiveDirective } = await loadPlugin();
     const dir = createTempRepo("seed", 1);
 
-    buildActiveDirective(dir);
+    buildActiveDirective(dir, { isFirstTurn: true });
     writeFileSync(
       path.join(dir, ".chitking", "active.yaml"),
       "active_thread: demo-thread\nupdated: true\n",
     );
-    const breadcrumb = buildActiveDirective(dir);
+    const breadcrumb = buildActiveDirective(dir, { isFirstTurn: false });
 
     expect(breadcrumb).toContain(
       "⚠️ active.yaml changed — active thread may differ from cached.",
@@ -210,12 +210,12 @@ describe("buildActiveDirective", () => {
     const { buildActiveDirective } = await loadPlugin();
     const dir = createTempRepo("seed", 1);
 
-    buildActiveDirective(dir);
+    buildActiveDirective(dir, { isFirstTurn: true });
     writeFileSync(
       path.join(dir, "research", "demo-thread", "thread.md"),
       `---\nthread: demo-thread\nstage: seed\nmaturity: nascent\nreadiness: 2\nreadiness_source: human\n---\n\n# Updated thread\n`,
     );
-    const breadcrumb = buildActiveDirective(dir);
+    const breadcrumb = buildActiveDirective(dir, { isFirstTurn: false });
 
     expect(breadcrumb).toContain(
       "⚠️ thread.md changed since last turn — re-read before acting.",
@@ -227,12 +227,12 @@ describe("buildActiveDirective", () => {
     const { buildActiveDirective } = await loadPlugin();
     const dir = createTempRepo("seed", 1);
 
-    buildActiveDirective(dir);
+    buildActiveDirective(dir, { isFirstTurn: true });
     writeFileSync(
       path.join(dir, "research", "project.md"),
       "# Project\n\nUpdated project.\n",
     );
-    const breadcrumb = buildActiveDirective(dir);
+    const breadcrumb = buildActiveDirective(dir, { isFirstTurn: false });
 
     expect(breadcrumb).toContain(
       "⚠️ project.md changed since last turn — re-read before acting.",
@@ -244,13 +244,13 @@ describe("buildActiveDirective", () => {
     const { buildActiveDirective } = await loadPlugin();
     const dir = createTempRepo("briefed", 1);
 
-    buildActiveDirective(dir);
+    buildActiveDirective(dir, { isFirstTurn: true });
     process.env.CHITKING_PROACTIVE = "0";
     writeFileSync(
       path.join(dir, ".chitking", "active.yaml"),
       "active_thread: demo-thread\nupdated: true\n",
     );
-    const breadcrumb = buildActiveDirective(dir);
+    const breadcrumb = buildActiveDirective(dir, { isFirstTurn: false });
 
     expect(breadcrumb).toContain("Thread: demo-thread");
     expect(breadcrumb).toContain("Stages: seed → [briefed]");
@@ -271,8 +271,8 @@ describe("buildActiveDirective", () => {
     const { buildActiveDirective } = await loadPlugin();
     const dir = createTempRepo("synthesis-ready", 5);
 
-    const first = buildActiveDirective(dir);
-    const breadcrumb = buildActiveDirective(dir);
+    const first = buildActiveDirective(dir, { isFirstTurn: true });
+    const breadcrumb = buildActiveDirective(dir, { isFirstTurn: false });
 
     expect(first).toContain("[synthesis-ready]");
     expect(first).toContain(
@@ -286,7 +286,7 @@ describe("buildActiveDirective", () => {
     const { buildActiveDirective } = await loadPlugin();
     const dir = createTempRepo("unknown-stage", 1);
 
-    const breadcrumb = buildActiveDirective(dir);
+    const breadcrumb = buildActiveDirective(dir, { isFirstTurn: false });
 
     expect(breadcrumb).toContain("Stages:");
     expect(breadcrumb).not.toContain("Next:");

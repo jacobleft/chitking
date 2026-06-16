@@ -347,6 +347,7 @@ project_incomplete_markers:
         input: Record<string, unknown>,
         output: { parts?: { type: string; text?: string }[] },
       ) => Promise<void>;
+      event: (input: { event?: Record<string, unknown> }) => void;
     };
 
     const unrelated = {
@@ -388,7 +389,10 @@ project_incomplete_markers:
     expect(roleCall.args.prompt).toContain("implement approved action");
 
     const chatOutput = { parts: [{ type: "text", text: "user request" }] };
-    await hooks["chat.message"]({ agent: "main" }, chatOutput);
+    await hooks["chat.message"](
+      { agent: "main", sessionID: "test-session-1" },
+      chatOutput,
+    );
     expect(chatOutput.parts[0].text).toContain("<chitking-session-start>");
     expect(chatOutput.parts[0].text).toContain(
       "Chitking research workflow: threads advance through circular stages",
@@ -406,6 +410,34 @@ project_incomplete_markers:
       "Response style: when communicating about this thread",
     );
     expect(chatOutput.parts[0].text).toContain("user request");
+
+    const secondChatOutput = {
+      parts: [{ type: "text", text: "second user request" }],
+    };
+    await hooks["chat.message"](
+      { agent: "main", sessionID: "test-session-1" },
+      secondChatOutput,
+    );
+    expect(secondChatOutput.parts[0].text).toContain("<chitking-breadcrumb>");
+    expect(secondChatOutput.parts[0].text).not.toContain(
+      "<chitking-session-start>",
+    );
+    expect(secondChatOutput.parts[0].text).toContain("second user request");
+
+    hooks.event({
+      event: { type: "session.compacted", properties: { sessionID: "test-session-1" } },
+    });
+    const afterCompactionChatOutput = {
+      parts: [{ type: "text", text: "after compaction" }],
+    };
+    await hooks["chat.message"](
+      { agent: "main", sessionID: "test-session-1" },
+      afterCompactionChatOutput,
+    );
+    expect(afterCompactionChatOutput.parts[0].text).toContain(
+      "<chitking-session-start>",
+    );
+    expect(afterCompactionChatOutput.parts[0].text).toContain("after compaction");
 
     const roleChatOutput = { parts: [{ type: "text", text: "role turn" }] };
     await hooks["chat.message"]({ agent: "chitking-dreamer" }, roleChatOutput);
