@@ -181,6 +181,12 @@ describe("chitking command skeleton", () => {
         path.join(cwd, ".opencode", "plugins", "inject-chitking-context.js"),
       ),
     ).toBe(true);
+    expect(existsSync(path.join(cwd, ".opencode", "package.json"))).toBe(true);
+    const openCodePkg = JSON.parse(
+      readFileSync(path.join(cwd, ".opencode", "package.json"), "utf-8"),
+    );
+    expect(openCodePkg.type).toBe("module");
+    expect(openCodePkg.dependencies["@opencode-ai/plugin"]).toBe("^1.14.0");
     for (const command of EXPECTED_CK_COMMANDS) {
       const openCodeCommand = readFileSync(
         path.join(cwd, ".opencode", "commands", `${command}.md`),
@@ -250,6 +256,7 @@ describe("chitking command skeleton", () => {
       "plugins",
       "inject-chitking-context.js",
     );
+    const openCodePkgPath = path.join(cwd, ".opencode", "package.json");
     writeFileSync(rolePath, "custom role", "utf-8");
     writeFileSync(agentPath, "custom agent", "utf-8");
     writeFileSync(openCodeCommandPath, "custom opencode command", "utf-8");
@@ -257,6 +264,7 @@ describe("chitking command skeleton", () => {
     writeFileSync(codexCommandPath, "custom codex command", "utf-8");
     writeFileSync(skillPath, "custom skill", "utf-8");
     writeFileSync(pluginPath, "custom plugin", "utf-8");
+    writeFileSync(openCodePkgPath, "custom package.json", "utf-8");
 
     chitkingInit(cwd);
 
@@ -271,6 +279,9 @@ describe("chitking command skeleton", () => {
     );
     expect(readFileSync(skillPath, "utf-8")).toBe("custom skill");
     expect(readFileSync(pluginPath, "utf-8")).toBe("custom plugin");
+    expect(readFileSync(openCodePkgPath, "utf-8")).toBe(
+      "custom package.json",
+    );
     expect(
       readFileSync(path.join(cwd, ".gitignore"), "utf-8").match(
         /research\/\*\/context\/\*\.yaml/g,

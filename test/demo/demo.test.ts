@@ -87,6 +87,7 @@ function generatedAdapterPaths(root: string): string[] {
     ...listRelativeFiles(path.join(root, ".opencode", "plugins")).map(
       (filePath) => path.join(".opencode", "plugins", filePath),
     ),
+    path.join(".opencode", "package.json"),
     path.join(".codex", "config.toml"),
     ...listRelativeFiles(path.join(root, ".codex", "skills")).map((filePath) =>
       path.join(".codex", "skills", filePath),
@@ -181,6 +182,9 @@ describe("demo Chitking workspace", () => {
           ),
         ),
       ).toBe(true);
+      expect(existsSync(path.join(tempDir, ".opencode", "package.json"))).toBe(
+        true,
+      );
       for (const command of EXPECTED_CK_COMMANDS) {
         expect(
           existsSync(
@@ -200,6 +204,7 @@ describe("demo Chitking workspace", () => {
       }
 
       const generatedPaths = generatedAdapterPaths(tempDir);
+      expect(generatedPaths).toContain(path.join(".opencode", "package.json"));
       expect(generatedPaths).toContain(path.join(".codex", "config.toml"));
       for (const command of EXPECTED_CK_COMMANDS) {
         expect(generatedPaths).toContain(

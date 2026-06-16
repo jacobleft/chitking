@@ -205,6 +205,19 @@ export function ensureOpenCodeChitkingContextPlugin(cwd: string): void {
     getOpenCodeChitkingContextPluginPath(cwd),
     fs.readFileSync(templatePath, "utf-8"),
   );
+  writeFileIfMissing(
+    path.join(cwd, ".opencode", "package.json"),
+    JSON.stringify(
+      {
+        type: "module",
+        dependencies: {
+          "@opencode-ai/plugin": "^1.14.0",
+        },
+      },
+      null,
+      2,
+    ) + "\n",
+  );
 }
 
 export function ensureSlashCommands(cwd: string): void {
