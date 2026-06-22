@@ -1,0 +1,6 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend spec entry point + pre-development checklist for CLI command-core work."}
+{"file": ".trellis/spec/guides/chitking-product-doctrine.md", "reason": "Role roster changes are product-facing; must respect Chitking product boundaries and the human-checkpoint invariant."}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Where the new predictRoleContractContent function and config.yaml edits belong; module organization conventions."}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "YAML config parsing and Markdown thread-section persistence patterns (RECORD_SECTION_BY_TYPE, REQUIRED_THREAD_SECTIONS, config.yaml roles)."}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "CLI error propagation for dispatch/record commands and stage-gate warnings."}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "TypeScript/lint/testing standards the new role + tests must meet."}
