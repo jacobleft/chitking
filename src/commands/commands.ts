@@ -309,6 +309,7 @@ export function buildRolePacket(
       record_failure: 'chitking record --type failure --text "..."',
       record_decision: 'chitking record --type decision --text "..."',
       record_revision: 'chitking record --type revision --text "..."',
+      record_prediction: 'chitking record --type prediction --text "..."',
     },
   };
   writeYamlFile(packetPath, packet);

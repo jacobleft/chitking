@@ -5,7 +5,7 @@ Append factual role output to the active Chitking research thread.
 ## Usage
 
 ```text
-/ck-record --type <evidence|failure|decision|revision> --text <text> [--commit <ref>]
+/ck-record --type <evidence|failure|decision|revision|prediction> --text <text> [--commit <ref>]
 ```
 
 ## Steps
@@ -22,6 +22,6 @@ Append factual role output to the active Chitking research thread.
 
 ## Boundaries
 
-- Record only factual output, evidence, failures, decisions, or revisions that the user/calling workflow asked to preserve.
+- Record only factual output, evidence, failures, decisions, revisions, or predictions that the user/calling workflow asked to preserve.
 - Do not use `record` to silently promote stage/readiness or rewrite the theory.
 - Do not edit `research/<thread>/thread.md` by hand to simulate this command.

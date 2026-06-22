@@ -116,3 +116,52 @@ export function getChitkingRuntimeTemplatePath(...segments: string[]): string {
   return path.join(getTemplateRootPath(), "chitking", ...segments);
 }
 ```
+
+---
+
+## Adding a Role
+
+When adding a new Chitking role, touch these files in order. The pattern is established by `plan/dreamer/build/verify/synthesize/review/oracle/predict`.
+
+### Files to change
+
+1. **`src/templates/chitking/config.yaml`** — add a `<role>:` entry under `roles:` with `min_stage`, `min_readiness`, `warnings` (boundary reminders), and `prompt: { objective, stop_conditions }`. This is the source of truth for the role's gates and posture.
+2. **`src/cli/chitking.ts`** — add the role name to the `--role` help enumeration (the parenthesized list in the `dispatch` command's `--role` option description).
+3. **`src/commands/templates.ts`** — choose a contract template (see below) and, if the role has hard boundaries, add a `<role>Boundary` conditional in `opencodeAdapterContent` sibling to `dreamerBoundary` / `predictBoundary`.
+4. **`src/commands/types.ts`** — only if the role introduces a new record type: add `"type": "Section"` to `RECORD_SECTION_BY_TYPE` **and** add the section name to `REQUIRED_THREAD_SECTIONS`. These two are coupled — adding one without the other breaks either `ck-record --type` or the `ck-new` thread scaffold.
+5. **Tests** — `test/commands/chitking.test.ts` (role-count assertions, dispatch packet, stage-gate warnings both at-floor and below-floor, contract content) and `test/demo/demo.test.ts` (adapter role list).
+
+### When to use a special-case contract template
+
+The default `defaultRoleContractContent` covers advisory roles whose output is free-form prose. Add a special-case `<role>RoleContractContent` function (precedent: `dreamerRoleContractContent`, `predictRoleContractContent`) when the role needs either of:
+
+- **Required Output Shape** — labeled fields the agent must emit (e.g., predict's `Claim / Source / Predicted Effect / Falsification Criterion`).
+- **Hard Boundaries** — cross-role routing rules that the default contract's "Universal Boundaries" do not cover (e.g., dreamer→build forbidden; predict→build forbidden without plan/review).
+
+Wire a `roleName === "<role>"` branch into the contract dispatcher loop (the fork around `templates.ts:270` that selects between default/dreamer/predict). Packet generation (`buildRolePacket`) stays generic — it reads `config.yaml` and does not per-role branch.
+
+### Record-type → section coupling
+
+Adding a record type requires touching both maps in `src/commands/types.ts`:
+
+```ts
+export const RECORD_SECTION_BY_TYPE = {
+  evidence: "Evidence",
+  failure: "Failed Paths",
+  decision: "Decisions & Maturity History",
+  revision: "Current Claim",
+  prediction: "Predictions",  // <-- new record type → new section
+} as const;
+
+export const REQUIRED_THREAD_SECTIONS = [
+  "Theory Brief",
+  // ...
+  "Predictions",  // <-- must also be added here so ck-new scaffolds it
+] as const;
+```
+
+Forgetting the `REQUIRED_THREAD_SECTIONS` entry means new threads won't scaffold the section header; `appendToSection` will still create it lazily on first record, but existing tests that assert section presence on `ck-new` will fail.
+
+### Permissions
+
+`opencodePermissionsForRole` in `src/commands/templates.ts` has three tiers: `build` (read+edit+bash), `verify` (read+bash), and the default fall-through (read-only). Most advisory roles use the default tier — no code change needed. Only add a branch when the role genuinely needs write or bash access (and consider whether that undermines the role's discipline, e.g., giving predict `bash` would let it peek at results before committing to a prediction).

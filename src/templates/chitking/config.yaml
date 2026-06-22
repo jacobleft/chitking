@@ -84,11 +84,28 @@ roles:
       stop_conditions:
         - The thread is below implementation-ready stage.
         - The task requires changing stage or readiness.
+  predict:
+    min_stage: gap-identified
+    min_readiness: 2
+    warnings:
+      - Predict is prediction-only; do not create implementation tasks.
+      - Predict output requires human, oracle, planner, or reviewer review before implementation.
+      - Never hand Predict output directly to build or Executor roles.
+      - Predict output must not be presented as an approved next safe action.
+    prompt:
+      objective: Propose the next concrete experiment as an explicit, falsifiable prediction with a cited source.
+      stop_conditions:
+        - The output would create or assign implementation tasks.
+        - The output would hand work directly to build or Executor roles.
+        - The prediction is missing a cited Source.
+        - The prediction is missing a Falsification Criterion.
+        - The prediction is being treated as an approved next safe action without human, oracle, planner, or reviewer review.
   verify:
     min_stage: verification-planned
     min_readiness: 3
     warnings:
       - Verification should cite concrete obligations from the thread.
+      - When checking obligations, cite specific Falsification Criteria from the Predictions section when available.
     prompt:
       objective: Check whether evidence satisfies the thread's verification obligations.
       stop_conditions:

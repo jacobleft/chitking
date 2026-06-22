@@ -60,6 +60,7 @@ Run `chitking init` once per project. It creates the following structure:
 │       ├── plan.md
 │       ├── dreamer.md
 │       ├── build.md
+│       ├── predict.md
 │       ├── verify.md
 │       ├── synthesize.md
 │       ├── review.md
@@ -71,6 +72,7 @@ Run `chitking init` once per project. It creates the following structure:
 │   │   ├── chitking-plan.md
 │   │   ├── chitking-dreamer.md
 │   │   ├── chitking-build.md
+│   │   ├── chitking-predict.md
 │   │   ├── chitking-verify.md
 │   │   ├── chitking-synthesize.md
 │   │   ├── chitking-review.md
@@ -141,6 +143,7 @@ This creates `research/contact-stability/thread.md` with:
   - Current Claim
   - Capability Gap
   - Verification Obligations
+  - Predictions
   - Evidence
   - Failed Paths
   - Next Safe Actions
@@ -271,13 +274,14 @@ Suggested next actions:
 
 ## 9. Role dispatch prepares context
 
-`chitking dispatch [--role <role>]` generates `research/<thread>/context/<role>.yaml` packets. Seven roles are configured by default:
+`chitking dispatch [--role <role>]` generates `research/<thread>/context/<role>.yaml` packets. Eight roles are configured by default:
 
 | Role | Min stage | Min readiness | Purpose |
 |------|-----------|---------------|---------|
 | `plan` | `briefed` | 1 | Turn theory brief and gap into a safe research plan. |
 | `dreamer` | `seed` | 1 | Generate hypotheses, analogies, and candidate mechanisms. |
 | `build` | `implementation-ready` | 4 | Implement the approved next safe action. |
+| `predict` | `gap-identified` | 2 | Propose a falsifiable experiment with a cited source. |
 | `verify` | `verification-planned` | 3 | Check evidence against verification obligations. |
 | `synthesize` | `synthesis-ready` | 5 | Synthesize stable conclusions from evidence and failed paths. |
 | `review` | `specified` | 2 | Review thread consistency, risk, and readiness evidence. |
@@ -307,6 +311,7 @@ chitking record --type evidence --text "Ran benchmark X; observed 12% improvemen
 chitking record --type failure --text "Approach Y failed because Z."
 chitking record --type decision --text "Selected protocol P based on Q."
 chitking record --type revision --text "Updated claim to R."
+chitking record --type prediction --text "Claim: ... Source: ... Predicted Effect: ... Falsification Criterion: ..."
 ```
 
 The `--type` maps to a section:
@@ -317,6 +322,7 @@ The `--type` maps to a section:
 | `failure` | Failed Paths |
 | `decision` | Decisions & Maturity History |
 | `revision` | Current Claim |
+| `prediction` | Predictions |
 
 Optionally attach a commit with `--commit <ref>`. Recorded content is durable research memory and survives the chat session.
 

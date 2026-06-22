@@ -148,6 +148,7 @@ describe("demo Chitking workspace", () => {
         "dreamer",
         "oracle",
         "plan",
+        "predict",
         "review",
         "synthesize",
         "verify",

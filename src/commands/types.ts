@@ -54,6 +54,7 @@ export const REQUIRED_THREAD_SECTIONS = [
   "Current Claim",
   "Capability Gap",
   "Verification Obligations",
+  "Predictions",
   "Evidence",
   "Failed Paths",
   "Next Safe Actions",
@@ -65,6 +66,7 @@ export const RECORD_SECTION_BY_TYPE = {
   failure: "Failed Paths",
   decision: "Decisions & Maturity History",
   revision: "Current Claim",
+  prediction: "Predictions",
 } as const;
 
 export type RecordType = keyof typeof RECORD_SECTION_BY_TYPE;

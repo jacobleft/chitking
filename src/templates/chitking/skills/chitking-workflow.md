@@ -14,7 +14,7 @@ Humans own research direction, stage, maturity, and readiness checkpoints. Agent
 - `.chitking/config.yaml` stores the stages, stage advancement thresholds, maturity levels, role definitions, role gates, warnings, and incomplete-project markers.
 - `.chitking/roles/*.md` stores canonical, tool-neutral role contracts. These contracts define role objectives, gates, warnings, stop conditions, required inputs, and universal boundaries.
 - `research/project.md` is the project-level source of truth. Read it before thread-specific work and do not silently rewrite its assumptions, verification standards, or non-goals.
-- `research/<thread>/thread.md` is the thread-level source of truth. Its frontmatter records the thread slug, stage, maturity, readiness, readiness source, recorded commits, and update time. Its sections record the theory brief, current claim, capability gap, verification obligations, evidence, failed paths, next safe actions, and maturity history.
+- `research/<thread>/thread.md` is the thread-level source of truth. Its frontmatter records the thread slug, stage, maturity, readiness, readiness source, recorded commits, and update time. Its sections record the theory brief, current claim, capability gap, verification obligations, predictions, evidence, failed paths, next safe actions, and maturity history.
 
 ## Generated Files and Platform Adapters
 
@@ -39,7 +39,7 @@ Humans own research direction, stage, maturity, and readiness checkpoints. Agent
 - `chitking step` changes stage/readiness and records the reason in `thread.md`. Because humans own stage/readiness, only run or emulate this command when explicitly instructed by the user or calling workflow.
 - `chitking mature --to <level> --reason "..."` updates whole-thread maturity and records the reason in `thread.md`. Because humans own maturity transitions, only run or emulate this command when explicitly instructed by the user or calling workflow.
 - `chitking dispatch [--role <role>]` regenerates `research/<thread>/context/<role>.yaml` for a role (or all roles when `--role` is omitted). Packets are generated cache and should not replace reading `research/project.md` and `research/<thread>/thread.md`.
-- `chitking record --type <type> --text "..."` appends factual output to the active thread. Use it only when the user or calling workflow asks you to record evidence, failures, decisions, or revisions.
+- `chitking record --type <type> --text "..."` appends factual output to the active thread. Use it only when the user or calling workflow asks you to record evidence, failures, decisions, revisions, or predictions.
 
 ## Agent Operating Rules
 

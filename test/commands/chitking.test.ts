@@ -748,7 +748,7 @@ project_incomplete_markers:
       "Maturity updated: contact-stability nascent → developing",
     );
     expect(logSpy).toHaveBeenCalledWith(
-      "Dispatched 7 role packets for contact-stability.",
+      "Dispatched 8 role packets for contact-stability.",
     );
     expect(
       existsSync(
@@ -996,6 +996,132 @@ legacy.
     expect(packetText).not.toContain("readiness 1 is below role minimum");
   });
 
+  it("dispatch writes Predict packet with required output shape and boundaries", () => {
+    const cwd = makeTempDir("chitking-predict-dispatch-");
+    vi.spyOn(console, "log").mockImplementation(() => undefined);
+    chitkingInit(cwd);
+    chitkingNew("Contact Stability", { noDispatch: true }, cwd);
+    chitkingStep(
+      { to: "gap-identified", readiness: 2, reason: "human accepted the gap" },
+      cwd,
+    );
+
+    const packetPath = chitkingDispatch({ role: "predict" }, cwd);
+
+    expect(packetPath).toBe("research/contact-stability/context/predict.yaml");
+    const packet = parse(readText(path.join(cwd, packetPath))) as Record<
+      string,
+      unknown
+    >;
+    expect(packet).toMatchObject({
+      role: "predict",
+      thread: "contact-stability",
+      project_file: "research/project.md",
+      thread_file: "research/contact-stability/thread.md",
+      stage: "gap-identified",
+      maturity: "nascent",
+      readiness: 2,
+    });
+    const packetText = readText(path.join(cwd, packetPath));
+    expect(packetText).toContain("Propose the next concrete experiment");
+    expect(packetText).toContain("falsifiable");
+    expect(packetText).toContain("prediction");
+    expect(packetText).toContain("missing a cited Source");
+    expect(packetText).toContain("missing a Falsification Criterion");
+    expect(packetText).toContain("Predict output must not be presented");
+    expect(packetText).not.toContain("stage gap-identified is before role minimum");
+    expect(packetText).not.toContain("readiness 2 is below role minimum");
+  });
+
+  it("dispatch Predict packet emits stage/readiness gate warnings when below minimum", () => {
+    const cwd = makeTempDir("chitking-predict-gate-");
+    vi.spyOn(console, "log").mockImplementation(() => undefined);
+    chitkingInit(cwd);
+    chitkingNew("Contact Stability", { noDispatch: true }, cwd);
+
+    const packetPath = chitkingDispatch({ role: "predict" }, cwd);
+
+    expect(packetPath).toBe("research/contact-stability/context/predict.yaml");
+    const packetText = readText(path.join(cwd, packetPath));
+    expect(packetText).toContain("readiness 1 is below role minimum 2");
+    expect(packetText).toContain("stage seed is before role minimum gap-identified");
+  });
+
+  it("record --type prediction appends to the Predictions section", () => {
+    const cwd = makeTempDir("chitking-record-prediction-");
+    vi.spyOn(console, "log").mockImplementation(() => undefined);
+    chitkingInit(cwd);
+    chitkingNew("Contact Stability", { noDispatch: true }, cwd);
+
+    chitkingRecord(
+      {
+        type: "prediction",
+        text: "Claim: X. Source: Y. Predicted Effect: Z. Falsification Criterion: W.",
+      },
+      cwd,
+    );
+
+    const threadPath = path.join(
+      cwd,
+      "research",
+      "contact-stability",
+      "thread.md",
+    );
+    const threadText = readText(threadPath);
+    expect(threadText).toContain("## Predictions");
+    expect(threadText).toContain(
+      "Claim: X. Source: Y. Predicted Effect: Z. Falsification Criterion: W.",
+    );
+  });
+
+  it("init generates Predict role contract and adapter with default permissions", () => {
+    const cwd = makeTempDir("chitking-predict-harness-");
+    vi.spyOn(console, "log").mockImplementation(() => undefined);
+
+    chitkingInit(cwd);
+
+    const rolePath = path.join(cwd, ".chitking", "roles", "predict.md");
+    const adapterPath = path.join(
+      cwd,
+      ".opencode",
+      "agents",
+      "chitking-predict.md",
+    );
+    expect(existsSync(rolePath)).toBe(true);
+    expect(existsSync(adapterPath)).toBe(true);
+    const roleText = readText(rolePath);
+    expect(roleText).toContain("Chitking Predict Role");
+    expect(roleText).toContain("Required Output Shape");
+    expect(roleText).toContain("**Claim**");
+    expect(roleText).toContain("**Source**");
+    expect(roleText).toContain("**Predicted Effect**");
+    expect(roleText).toContain("**Falsification Criterion**");
+    expect(roleText).toContain("Hard Boundaries");
+    expect(roleText).toContain("Do not hand Predict output directly to build");
+    const adapterText = readText(adapterPath);
+    expect(adapterText).toContain("chitking dispatch --role predict");
+    expect(adapterText).toContain("Predict-specific boundary");
+    expect(adapterText).toContain("Do not hand predictions directly to build");
+    expect(adapterText).toContain("edit: deny");
+    expect(adapterText).toContain("bash: deny");
+  });
+
+  it("config loads verify warning referencing Predictions section", () => {
+    const cwd = makeTempDir("chitking-predict-verify-warning-");
+    vi.spyOn(console, "log").mockImplementation(() => undefined);
+    chitkingInit(cwd);
+    chitkingNew("Contact Stability", { noDispatch: true }, cwd);
+    chitkingStep(
+      { to: "verification-planned", readiness: 3, reason: "plan ready" },
+      cwd,
+    );
+
+    const packetPath = chitkingDispatch({ role: "verify" }, cwd);
+
+    const packetText = readText(path.join(cwd, packetPath));
+    expect(packetText).toContain("Predictions section when available");
+  });
+
   it("dispatch generates packets for all configured roles", () => {
     const cwd = makeTempDir("chitking-dispatch-all-");
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
@@ -1009,6 +1135,7 @@ legacy.
       "dreamer",
       "oracle",
       "plan",
+      "predict",
       "review",
       "synthesize",
       "verify",
@@ -1165,13 +1292,14 @@ legacy.
     chitkingNew("Contact Stability", {}, cwd);
 
     expect(logSpy).toHaveBeenCalledWith(
-      "Dispatched 7 role packets for contact-stability.",
+      "Dispatched 8 role packets for contact-stability.",
     );
     for (const role of [
       "build",
       "dreamer",
       "oracle",
       "plan",
+      "predict",
       "review",
       "synthesize",
       "verify",
@@ -1200,7 +1328,7 @@ legacy.
     chitkingFocus("contact-stability", {}, cwd);
 
     expect(logSpy).toHaveBeenCalledWith(
-      "Dispatched 7 role packets for contact-stability.",
+      "Dispatched 8 role packets for contact-stability.",
     );
     expect(
       existsSync(
@@ -1224,7 +1352,7 @@ legacy.
     chitkingStep({}, cwd);
 
     expect(logSpy).toHaveBeenCalledWith(
-      "Dispatched 7 role packets for contact-stability.",
+      "Dispatched 8 role packets for contact-stability.",
     );
     expect(
       existsSync(
@@ -1260,7 +1388,7 @@ legacy.
     chitkingInit(cwd);
 
     expect(logSpy).toHaveBeenCalledWith(
-      "Dispatched 7 role packets for contact-stability.",
+      "Dispatched 8 role packets for contact-stability.",
     );
   });
 
@@ -1602,13 +1730,14 @@ project_incomplete_markers: []
     chitkingIterate("Friction Model", {}, cwd);
 
     expect(logSpy).toHaveBeenCalledWith(
-      "Dispatched 7 role packets for friction-model.",
+      "Dispatched 8 role packets for friction-model.",
     );
     for (const role of [
       "build",
       "dreamer",
       "oracle",
       "plan",
+      "predict",
       "review",
       "synthesize",
       "verify",

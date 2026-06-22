@@ -26,6 +26,10 @@ The thread lacks a verified comparison between the score and observed post-distu
 - Record at least one successful and one failed contact case.
 - Compare score ranking against manual review before synthesis.
 
+## Predictions
+
+- No predictions recorded yet.
+
 ## Evidence
 
 - No evidence recorded yet.

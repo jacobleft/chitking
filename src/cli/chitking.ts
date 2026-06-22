@@ -198,7 +198,7 @@ export function createChitkingProgram(): Command {
     .description("Generate role prompt packets for the active thread")
     .option(
       "--role <role>",
-      "Dispatch a single role; omit to dispatch all roles (plan, dreamer, build, verify, synthesize, review, oracle)",
+      "Dispatch a single role; omit to dispatch all roles (plan, dreamer, build, predict, verify, synthesize, review, oracle)",
     )
     .action((options: { role?: string }) =>
       runWithErrors(() => chitkingDispatch(options)),
@@ -211,14 +211,14 @@ export function createChitkingProgram(): Command {
     )
     .requiredOption(
       "--type <type>",
-      "Record type: evidence, failure, decision, revision",
+      "Record type: evidence, failure, decision, revision, prediction",
       parseRecordType,
     )
     .option("--commit <ref>", "Resolve and add commit hash to recorded_commits")
     .requiredOption("--text <text>", "Factual text to append")
     .action(
       (options: {
-        type: "evidence" | "failure" | "decision" | "revision";
+        type: "evidence" | "failure" | "decision" | "revision" | "prediction";
         commit?: string;
         text: string;
       }) => runWithErrors(() => chitkingRecord(options)),
