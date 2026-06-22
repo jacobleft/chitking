@@ -635,3 +635,36 @@ Created docs/how-it-works.md (455 lines): comprehensive step-by-step walkthrough
 ### Next Steps
 
 - None - task complete
+
+
+## Session 20: Add predict role for falsifiable experiment predictions
+
+**Date**: 2026-06-22
+**Task**: Add predict role for falsifiable experiment predictions
+**Branch**: `main`
+
+### Summary
+
+Added the predict role (Reasoner-equivalent) closing Chitking's falsifiable-prediction gap. Seven design decisions shipped (D1-D7): new prediction record type -> Predictions section; special-case predictRoleContractContent with Required Output Shape (Claim/Source/Predicted Effect/Falsification Criterion) + Hard Boundaries; gap-identified/readiness-2 gate; predict->build forbidden without plan/review; verify cross-reference warning; default-tier read-only permissions. Version bumped 0.0.12 -> 0.0.13. Documented the Adding a Role pattern in backend spec. Inspired by scholar-loop Reasoner's predict-then-verify spine.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `a6c3973` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
